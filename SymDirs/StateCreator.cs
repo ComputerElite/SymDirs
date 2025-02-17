@@ -7,9 +7,23 @@ namespace SymDirs;
 /// </summary>
 public class StateCreator
 {
+    public static int UpdateSubdirsInConfig(Config config)
+    {
+        int added = 0;
+        foreach (string folder in config.SourceDirectorySources)
+        {
+            foreach (string dir in Directory.GetDirectories(folder))
+            {
+                added += config.AddSource(dir);
+            }
+        }
+
+        return added;
+    }
     public static void CheckState(Config config)
     {
         config.UpdateRelations();
+        config.TargetDirectories.ForEach(x => x.MissingContent.Clear());
         foreach (ConfigDirectory sourceDirectory in config.SourceDirectories)
         {
             if (sourceDirectory.Path == null || sourceDirectory.Name == null) continue;
@@ -19,7 +33,7 @@ public class StateCreator
                 bool linked = sourceDirectory.Links.Contains(targetDirectory);
                 string targetPath = Path.Combine(targetDirectory.Path, sourceDirectory.Name);
                 if (!linked) continue;
-                targetDirectory.MissingOrAddedContent = CheckState(targetPath, sourceDirectory.Path);
+                targetDirectory.MissingContent.Add(sourceDirectory.Path, CheckState(targetPath, sourceDirectory.Path));
             }
         }
     }

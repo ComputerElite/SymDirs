@@ -99,7 +99,7 @@ public class ConfigDirectory
     public string? Path { get; set; } = null;
     public List<string?> LinkedBy { get; set; } = new ();
     public List<ConfigDirectory> Links = new ();
-    public List<string> MissingOrAddedContent { get; set; } = [];
+    public Dictionary<string, List<string>> MissingContent { get; set; } = new ();
 
     public string? Name => System.IO.Path.GetFileName(Path);
     [JsonIgnore]

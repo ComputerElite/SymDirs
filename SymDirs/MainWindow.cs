@@ -1,10 +1,13 @@
+using System.Linq.Expressions;
+using System.Text.RegularExpressions;
+
 namespace SymDirs;
 
 public class MainWindow
 {
     public string state = "";
     public Config? config;
-    public void Show()
+    public void Show(string arg = "")
     {
         if(config == null) config = Config.Load();
         Console.ForegroundColor = ConsoleColor.White;
@@ -16,21 +19,25 @@ public class MainWindow
         Console.WriteLine(state);
         Console.WriteLine();
         ListState();
-        Console.WriteLine("[1] Add source directory     [2] Add target directory  [3] toggle link  [4] Apply & Save configuration  [5] Reload configuration");
+        Console.WriteLine("[1] Add source directory  [2] Add target directory  [3] toggle link  [4] Update sources  [5] Reload configuration");
         Console.WriteLine("[6] Remove source directory  [7] Remove target directory");
         Console.Write("Action: ");
-        ConsoleKeyInfo read = Console.ReadKey();
+        string read = arg != "" ? arg : Console.ReadLine();
+        List<string> actions = read.Split(',').ToList();
+        string action = actions[0];
+        actions.RemoveAt(0);
         Console.WriteLine();
         state = "";
         
-        switch (read.KeyChar)
+        switch (action[0])
         {
             case '1':
                 Console.Write("Add subdirectories? (Y/n): ");
-                bool subdirs = Console.ReadKey().KeyChar != 'n';
+                bool subdirs = actions.Count > 1 ? actions[0] != "n" : Console.ReadKey().KeyChar != 'n';
+                if(actions.Count > 1 && !actions[0].StartsWith("/")) actions.RemoveAt(0);
                 Console.WriteLine();
                 Console.Write("Path: ");
-                string path = Console.ReadLine();
+                string path = actions.Count >= 1 ? String.Join(',', actions) : Console.ReadLine();
                 if (path.Trim() == "") break;
                 int added = 0;
                 if (subdirs)    
@@ -51,64 +58,172 @@ public class MainWindow
                 break;
             case '2':
                 Console.Write("Path: ");
-                string path2 = Console.ReadLine();
+                string path2 = actions.Count >= 1 ? String.Join(',', actions) : Console.ReadLine();
                 if (path2.Trim() == "") break;
                 state = $"Added {config.AddTarget(path2)} target directory";
                 config.UpdateRelations();
                 break;
             case '3':
-                Console.Write("Source: ");
-                int source = int.Parse(Console.ReadLine());
-                Console.Write("Target: ");
-                int target = int.Parse(Console.ReadLine());
-                if (source < config.SourceDirectories.Count && target < config.TargetDirectories.Count)
+                string expression;
+                if (actions.Count <= 2)
                 {
-                    ConfigDirectory sourceDir = config.SourceDirectories[source];
-                    ConfigDirectory targetDir = config.TargetDirectories[target];
-                    if (sourceDir.Links.Contains(targetDir))
+                    Console.Write("Source: ");
+                    expression = Console.ReadLine();
+                }
+                else expression = String.Join(',', actions);
+                
+                bool? enable = null;
+                try
+                {
+                    
+                    bool e;
+                    if ((e = expression.StartsWith("e")) || expression.StartsWith("d"))
                     {
-                        sourceDir.Remove(targetDir);
+                        enable = e;
+                        expression = expression.Substring(1);
+                    }
+                    List<int> sources = new List<int>();
+                    List<int> targets = new List<int>();
+                    if (expression.Contains(","))
+                    {
+                        sources.AddRange(ParseRange(expression.Split(",")[0], true));
+                        targets.AddRange(ParseRange(expression.Split(",")[1], false));
                     }
                     else
                     {
-                        sourceDir.Add(targetDir);
+                        sources.Add(int.Parse(expression));
+                        Console.Write("Target: ");
+                        targets.Add(int.Parse(Console.ReadLine()));
+                    }
+
+                    foreach (int source in sources)
+                    {
+                        foreach (int target in targets)
+                        {
+                            if (source < config.SourceDirectories.Count && target < config.TargetDirectories.Count)
+                            {
+                                ConfigDirectory sourceDir = config.SourceDirectories[source];
+                                ConfigDirectory targetDir = config.TargetDirectories[target];
+                                if (enable == null && sourceDir.Links.Contains(targetDir) || enable.HasValue && !enable.Value)
+                                {
+                                    sourceDir.Remove(targetDir);
+                                }
+                                else
+                                {
+                                    sourceDir.Add(targetDir);
+                                }
+                            }
+                        }
                     }
                     config.UpdateRelations();
+                } catch (Exception e)
+                {
+                    state = e.ToString();
                 }
-                break;
-            case '4':
-                config.Save();
-                StateCreator.ApplyState(config);
-                state = "Applied state to disk";
+                
                 break;
             case '5':
                 config = Config.Load();
                 state = "Loaded config from disk";
                 break;
             case '6':
-                Console.Write("Source: ");
-                int removeSource = int.Parse(Console.ReadLine());
-                if (removeSource < config.SourceDirectories.Count)
+                try
                 {
-                    config.SourceDirectories.RemoveAt(removeSource);
+                    string expression2;
+                    if (actions.Count <= 1)
+                    {
+                        Console.Write("Source: ");
+                        expression2 = Console.ReadLine();
+                    }
+                    else expression2 = actions[0];
+
+                    foreach (int removeSource in ParseRange(expression2))
+                    {
+                        if (removeSource >= config.SourceDirectories.Count) return;
+                        config.SourceDirectories.RemoveAt(removeSource);
+                    }
                     config.UpdateRelations();
+                } catch (Exception e)
+                {
+                    state = e.ToString();
                 }
                 break;
             case '7':
-                Console.Write("Target: ");
-                
-                int removeTarget = int.Parse(Console.ReadLine());
-                if (removeTarget < config.TargetDirectories.Count)
+                try
                 {
-                    config.TargetDirectories.RemoveAt(removeTarget);
+                    string expression2;
+                    if (actions.Count <= 1)
+                    {
+                        Console.Write("Target: ");
+                        expression2 = Console.ReadLine();
+                    }
+                    else expression2 = actions[0];
+                    foreach (int removeTarget in ParseRange(expression2))
+                    {
+                        if (removeTarget >= config.TargetDirectories.Count) return;
+                        config.TargetDirectories.RemoveAt(removeTarget);
+                    }
                     config.UpdateRelations();
                 }
+                catch (Exception e)
+                {
+                    state = e.ToString();
+                }
+                break;
+            case '4':
+                state = $"Added {StateCreator.UpdateSubdirsInConfig(config)} new source directories from {config.SourceDirectorySources.Count} directories";
                 break;
         }
     }
 
+    public List<int> ParseRange(string range, bool useSources = true)
+    {
+        List<int> sources = new List<int>();
+        foreach(string part in range.Split(" "))
+        {
+            if(part.Trim() == "") continue;
+            
+            if (!Regex.IsMatch(part.Trim(), @"^[0-9]+$"))
+            {
+                // Perhaps it's a directory
+                ICollection<ConfigDirectory> dirs =
+                    (useSources ? config?.SourceDirectories : config?.TargetDirectories) ?? [];
+                for (int i = 0; i < dirs.Count; i++)
+                {
+                    if (!dirs.ElementAt(i).Path.Contains(part)) continue;
+                    sources.Add(i);
+                }
+                continue;
+            }
+            
+            string[] partialParts = part.Split('-');
+            if (partialParts.Length > 1)
+            {
+                for(int i = int.Parse(partialParts[0]); i <= int.Parse(partialParts[1]); i++)
+                {
+                    sources.Add(i);
+                }
+
+                continue;
+            }
+            sources.Add(int.Parse(part));
+        }
+
+        return sources;
+    }
+
     public void ListState()
     {
+        if ((config?.SourceDirectorySources.Count ?? 0) > 0)
+        {
+            Console.WriteLine("Folders to scan for source directories:");
+            foreach (string folder in config?.SourceDirectorySources ?? [])
+            {
+                Console.WriteLine(folder);
+            }
+            Console.WriteLine();
+        }
+        
         int longestFolder = 0;
         foreach (var dir in config?.SourceDirectories ?? [])
         {
@@ -143,7 +258,7 @@ public class MainWindow
             foreach (ConfigDirectory targetDirectory in config?.TargetDirectories ?? [])
             {
                 bool linked = sourceDir.Links.Contains(targetDirectory);
-                bool partialContent = targetDirectory.MissingOrAddedContent.Count > 0;
+                bool partialContent = targetDirectory.MissingContent.ContainsKey(sourceDir.Path ?? "") && targetDirectory.MissingContent[sourceDir.Path ?? ""].Count > 0;
                 Console.ForegroundColor = linked ? ConsoleColor.Green : ConsoleColor.Red;
                 if(linked && partialContent) Console.ForegroundColor = ConsoleColor.Yellow;
                 string text = linked ? $"Y{(partialContent ? " (p)" : "")}" : "N";

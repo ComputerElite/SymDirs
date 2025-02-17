@@ -1,7 +1,16 @@
 ﻿using SymDirs;
 
-MainWindow w = new MainWindow();
-while (true)
+class Program
 {
-    w.Show();
+    static void Main(string[] args)
+    {
+        MainWindow w = new MainWindow();
+
+        string arg = String.Join(' ', args);
+
+        do
+        {
+            w.Show(arg);
+        } while (arg == "");
+    }
 }

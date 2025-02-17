@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymDirs", "SymDirs\SymDirs.csproj", "{FA8AA749-9D42-4881-AABA-0B71D8B4C245}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FA8AA749-9D42-4881-AABA-0B71D8B4C245}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA8AA749-9D42-4881-AABA-0B71D8B4C245}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA8AA749-9D42-4881-AABA-0B71D8B4C245}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA8AA749-9D42-4881-AABA-0B71D8B4C245}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

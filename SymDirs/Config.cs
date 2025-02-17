@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -17,6 +18,7 @@ public class Config
 
         Config c = JsonSerializer.Deserialize<Config>(File.ReadAllText(path)) ?? new Config();
         c.UpdateRelations();
+        StateCreator.CheckState(c);
         return c;
     }
 
@@ -84,6 +86,7 @@ public class ConfigDirectory
     public string? Path { get; set; } = null;
     public List<string?> LinkedBy { get; set; } = new ();
     public List<ConfigDirectory> Links = new ();
+    public List<string> MissingOrAddedContent { get; set; } = [];
 
     public string? Name => System.IO.Path.GetFileName(Path);
     [JsonIgnore]

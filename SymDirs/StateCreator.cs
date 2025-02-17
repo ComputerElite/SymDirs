@@ -7,6 +7,23 @@ namespace SymDirs;
 /// </summary>
 public class StateCreator
 {
+    public static void CheckState(Config config)
+    {
+        config.UpdateRelations();
+        foreach (ConfigDirectory sourceDirectory in config.SourceDirectories)
+        {
+            if (sourceDirectory.Path == null || sourceDirectory.Name == null) continue;
+            foreach (ConfigDirectory targetDirectory in config.TargetDirectories)
+            {
+                if (targetDirectory.Path == null) continue;
+                bool linked = sourceDirectory.Links.Contains(targetDirectory);
+                string targetPath = Path.Combine(targetDirectory.Path, sourceDirectory.Name);
+                if (!linked) continue;
+                targetDirectory.MissingOrAddedContent = CheckState(targetPath, sourceDirectory.Path);
+            }
+        }
+    }
+    
     public static void ApplyState(Config config)
     {
         config.UpdateRelations();
@@ -20,7 +37,6 @@ public class StateCreator
                 string targetPath = Path.Combine(targetDirectory.Path, sourceDirectory.Name);
                 if (linked)
                 {
-                    if (Directory.Exists(targetPath)) continue;
                     LinkAllFiles(targetPath, sourceDirectory.Path);
                     continue;
                 }
@@ -29,6 +45,22 @@ public class StateCreator
                 Directory.Delete(targetPath, true);
             }
         }
+
+        CheckState(config);
+    }
+    
+    public static List<string> CheckState(string targetDirectory, string sourceDirectory)
+    {
+        // Link all files
+        List<string> missingFiles = new List<string>();
+        foreach (string newPath in Directory.GetFiles(sourceDirectory, "*.*", SearchOption.AllDirectories))
+        {
+            string newFilePath = newPath.Replace(sourceDirectory, targetDirectory);
+            if (File.Exists(newFilePath)) continue;
+            missingFiles.Add(newFilePath);
+        }
+
+        return missingFiles;
     }
 
     public static void LinkAllFiles(string targetDirectory, string sourceDirectory)

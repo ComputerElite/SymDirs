@@ -142,8 +142,11 @@ public class MainWindow
             foreach (ConfigDirectory targetDirectory in config?.TargetDirectories ?? [])
             {
                 bool linked = sourceDir.Links.Contains(targetDirectory);
+                bool partialContent = targetDirectory.MissingOrAddedContent.Count > 0;
                 Console.ForegroundColor = linked ? ConsoleColor.Green : ConsoleColor.Red;
-                Console.Write((linked ? "Y" : "N").PadLeft(targetDirectory.NameLength / 2).PadRight(targetDirectory.NameLength + 2));
+                if(linked && partialContent) Console.ForegroundColor = ConsoleColor.Yellow;
+                string text = linked ? $"Y{(partialContent ? " (p)" : "")}" : "N";
+                Console.Write(text.PadLeft(targetDirectory.NameLength / 2 + text.Length / 2).PadRight(targetDirectory.NameLength + 2));
             }
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine();

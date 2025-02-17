@@ -33,12 +33,13 @@ public class MainWindow
                 string path = Console.ReadLine();
                 if (path.Trim() == "") break;
                 int added = 0;
-                if (subdirs)
+                if (subdirs)    
                 {
                     Console.WriteLine(path);
+                    config.SourceDirectorySources.Add(path);
                     foreach (string dir in Directory.GetDirectories(path))
                     {
-                        added += config.AddSource(path);
+                        added += config.AddSource(dir);
                     }
                 }
                 else
@@ -70,7 +71,7 @@ public class MainWindow
                     }
                     else
                     {
-                        sourceDir.Links.Add(targetDir);
+                        sourceDir.Add(targetDir);
                     }
                     config.UpdateRelations();
                 }

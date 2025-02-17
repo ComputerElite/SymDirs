@@ -7,6 +7,7 @@ namespace SymDirs;
 public class Config
 {
     public List<ConfigDirectory> SourceDirectories { get; set; } = new List<ConfigDirectory>();
+    public List<string> SourceDirectorySources { get; set; } = new List<string>();
     public List<ConfigDirectory> TargetDirectories { get; set; } = new List<ConfigDirectory>();
     
     public static Config Load(string path = "config.json")
@@ -17,9 +18,19 @@ public class Config
         }
 
         Config c = JsonSerializer.Deserialize<Config>(File.ReadAllText(path)) ?? new Config();
+        c.RemoveDuplicates();
         c.UpdateRelations();
         StateCreator.CheckState(c);
         return c;
+    }
+
+    private void RemoveDuplicates()
+    {
+        foreach (ConfigDirectory sourceDirectory in SourceDirectories)
+        {
+            sourceDirectory.LinkedBy = sourceDirectory.LinkedBy.Distinct().ToList();
+        }
+        
     }
 
     /// <summary>
@@ -30,6 +41,7 @@ public class Config
         foreach (ConfigDirectory sourceDirectory in SourceDirectories)
         {
             if (sourceDirectory.Path == null) continue;
+            sourceDirectory.Links.Clear();
             foreach (ConfigDirectory targetDirectory in TargetDirectories)
             {
                 if (targetDirectory.Path == null) continue;
@@ -51,6 +63,7 @@ public class Config
     
     public void Save()
     {
+        RemoveDuplicates();
         UpdateRelations();
         string json = JsonSerializer.Serialize(this);
         File.WriteAllText("config.json", json);
@@ -96,5 +109,11 @@ public class ConfigDirectory
     {
         Links.Remove(targetDir);
         LinkedBy.Remove(targetDir.Path);
+    }
+
+    public void Add(ConfigDirectory targetDir)
+    {
+        Links.Add(targetDir);
+        LinkedBy.Add(targetDir.Path);
     }
 }

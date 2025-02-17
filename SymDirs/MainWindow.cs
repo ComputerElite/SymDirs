@@ -68,7 +68,7 @@ public class MainWindow
                 break;
             case '3':
                 string expression;
-                if (actions.Count <= 2)
+                if (actions.Count < 2)
                 {
                     Console.Write("Source: ");
                     expression = Console.ReadLine();

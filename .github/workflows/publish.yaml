@@ -1,0 +1,44 @@
+name: dotnet package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.x'
+      - run: dotnet publish --self-contained -o ./publish
+      - name: Compress binary
+        run: |
+           cd ./publish
+           tar -czvf sym_dirs_linux_x64.tar.gz *
+           cd ../
+      - name: Upload linux binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.TOKEN }}
+          file: publish/sym_dirs_linux_x64.tar.gz
+          asset_name: sym_dirs_linux_x64.${{ github.ref }}.tar.gz
+          tag: ${{ github.ref }}
+          overwrite: true
+      - run: bash generate_pkgbuild.sh
+      - name: Publish AUR package
+        uses: KSXGitHub/github-actions-deploy-aur@v3
+        with:
+          pkgname: shock-alarm
+          pkgbuild: ./PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update AUR package
+          ssh_keyscan_types: rsa,ecdsa,ed25519

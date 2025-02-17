@@ -19,8 +19,8 @@ public class MainWindow
         Console.WriteLine(state);
         Console.WriteLine();
         ListState();
-        Console.WriteLine("[1] Add source directory  [2] Add target directory  [3] toggle link  [4] Update sources  [5] Reload configuration");
-        Console.WriteLine("[6] Remove source directory  [7] Remove target directory");
+        Console.WriteLine("[1] Add source directory  [2] Add target directory  [3] toggle link  [4] Apply state (fix partial content)  [5] Reload configuration");
+        Console.WriteLine("[6] Remove source directory  [7] Remove target directory  [8] Update sources based on subdirectories");
         Console.Write("Action: ");
         string read = arg != "" ? arg : Console.ReadLine();
         List<string> actions = read.Split(',').ToList();
@@ -122,6 +122,11 @@ public class MainWindow
                 }
                 
                 break;
+            case '4':
+                config.Save();
+                StateCreator.ApplyState(config);
+                state = "Applied state to disk";
+                break;
             case '5':
                 config = Config.Load();
                 state = "Loaded config from disk";
@@ -170,7 +175,7 @@ public class MainWindow
                     state = e.ToString();
                 }
                 break;
-            case '4':
+            case '8':
                 state = $"Added {StateCreator.UpdateSubdirsInConfig(config)} new source directories from {config.SourceDirectorySources.Count} directories";
                 break;
         }

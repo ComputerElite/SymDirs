@@ -9,9 +9,25 @@ public class Config
     public List<ConfigDirectory> SourceDirectories { get; set; } = new List<ConfigDirectory>();
     public List<string> SourceDirectorySources { get; set; } = new List<string>();
     public List<ConfigDirectory> TargetDirectories { get; set; } = new List<ConfigDirectory>();
-    
-    public static Config Load(string path = "config.json")
+
+    public static string GetConfigDirectory()
     {
+        string configDir = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") 
+                           ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config");
+
+        string appConfigDir = Path.Combine(configDir, "sym-dirs");
+
+        // Ensure the directory exists
+        Directory.CreateDirectory(appConfigDir);
+        return appConfigDir;
+    }
+    
+    public static Config Load(string path = "")
+    {
+        if (path == "")
+        {
+            path = Path.Combine(GetConfigDirectory(), "config.json");
+        }
         if (!File.Exists(path))
         {
             return new Config();
@@ -66,7 +82,7 @@ public class Config
         RemoveDuplicates();
         UpdateRelations();
         string json = JsonSerializer.Serialize(this);
-        File.WriteAllText("config.json", json);
+        File.WriteAllText(Path.Combine(GetConfigDirectory(), "config.json"), json);
         foreach(ConfigDirectory dir in TargetDirectories)
         {
             if (dir.Path == null) continue;

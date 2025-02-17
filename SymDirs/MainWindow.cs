@@ -10,9 +10,12 @@ public class MainWindow
     public void Show(string arg = "")
     {
         if(config == null) config = Config.Load();
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.Clear();
-        Console.SetCursorPosition(0, 0);
+        if (arg == "")
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Clear();
+            Console.SetCursorPosition(0, 0);
+        }
         Console.WriteLine("SymDirs");
         Console.WriteLine("-------");
         Console.WriteLine();
@@ -53,7 +56,7 @@ public class MainWindow
                 {
                     added += config.AddSource(path);
                 }
-                config.UpdateRelations();
+                SaveAndApply();
                 state = $"Added {added} source {(added == 1 ? "directory" : "directories")}";
                 break;
             case '2':
@@ -61,7 +64,7 @@ public class MainWindow
                 string path2 = actions.Count >= 1 ? String.Join(',', actions) : Console.ReadLine();
                 if (path2.Trim() == "") break;
                 state = $"Added {config.AddTarget(path2)} target directory";
-                config.UpdateRelations();
+                SaveAndApply();
                 break;
             case '3':
                 string expression;
@@ -115,7 +118,7 @@ public class MainWindow
                             }
                         }
                     }
-                    config.UpdateRelations();
+                    SaveAndApply();
                 } catch (Exception e)
                 {
                     state = e.ToString();
@@ -123,8 +126,7 @@ public class MainWindow
                 
                 break;
             case '4':
-                config.Save();
-                StateCreator.ApplyState(config);
+                SaveAndApply();
                 state = "Applied state to disk";
                 break;
             case '5':
@@ -147,7 +149,7 @@ public class MainWindow
                         if (removeSource >= config.SourceDirectories.Count) return;
                         config.SourceDirectories.RemoveAt(removeSource);
                     }
-                    config.UpdateRelations();
+                    SaveAndApply();
                 } catch (Exception e)
                 {
                     state = e.ToString();
@@ -168,7 +170,7 @@ public class MainWindow
                         if (removeTarget >= config.TargetDirectories.Count) return;
                         config.TargetDirectories.RemoveAt(removeTarget);
                     }
-                    config.UpdateRelations();
+                    SaveAndApply();
                 }
                 catch (Exception e)
                 {
@@ -177,8 +179,17 @@ public class MainWindow
                 break;
             case '8':
                 state = $"Added {StateCreator.UpdateSubdirsInConfig(config)} new source directories from {config.SourceDirectorySources.Count} directories";
+                SaveAndApply();
                 break;
         }
+        if (arg != "") Console.WriteLine("\n" + state);
+    }
+
+    private void SaveAndApply()
+    {
+        config.UpdateRelations();
+        StateCreator.ApplyState(config);
+        config.Save();
     }
 
     public List<int> ParseRange(string range, bool useSources = true)

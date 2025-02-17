@@ -1,5 +1,5 @@
 # Maintainer: ComputerElite <ComputerElite.dev@gmail.com>
-pkgname=symdirs
+pkgname=sym-dirs
 pkgver=<version>
 pkgrel=1
 pkgdesc="A C# console application for managing hard links between multiple directories"

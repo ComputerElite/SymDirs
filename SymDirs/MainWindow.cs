@@ -7,6 +7,21 @@ public class MainWindow
 {
     public string state = "";
     public Config? config;
+
+    public static Dictionary<string, string> availableActions = new()
+    {
+        {"1[,y/n whether to add subdirectories of the supplied directory],<source_dir>", "Add source directory"},
+        {"2,<target_directory>", "Add target directory"},
+        {"3,<e/d whether to enable or disable the link><range of source dirs>,<range of target dirs>", "toggle link"},
+        {"4", "Apply state (fix partial content)"},
+        {"5", "Reload configuration"},
+        {"6,<range of source dirs>", "Remove source directory"},
+        {"7,<range of target dirs>", "Remove target directory"},
+        {"8", "Update sources based on subdirectories"},
+    };
+
+    private const string rangeHelp = "Range examples e. g. ('0-6', '2 3 6'). Alternatively a part of the directory path (e. g. 'beastars season 1')";
+
     public void Show(string arg = "")
     {
         if(config == null) config = Config.Load();
@@ -22,8 +37,12 @@ public class MainWindow
         Console.WriteLine(state);
         Console.WriteLine();
         ListState();
-        Console.WriteLine("[1] Add source directory  [2] Add target directory  [3] toggle link  [4] Apply state (fix partial content)  [5] Reload configuration");
-        Console.WriteLine("[6] Remove source directory  [7] Remove target directory  [8] Update sources based on subdirectories");
+        string availableActionsString = "";
+        foreach (KeyValuePair<string,string> keyValuePair in availableActions)
+        {
+            availableActionsString += $"[{keyValuePair.Key.Substring(0, 1)}] {keyValuePair.Value}{(keyValuePair.Key.StartsWith("4") ? "\n" : "  ")}";
+        }
+        Console.WriteLine(availableActionsString);
         Console.Write("Action: ");
         string read = arg != "" ? arg : Console.ReadLine();
         List<string> actions = read.Split(',').ToList();
@@ -285,5 +304,20 @@ public class MainWindow
             i++;
         }
         Console.WriteLine();
+    }
+
+    public static void ShowHelp()
+    {
+        Console.WriteLine("SymDirs <short_code>");
+        Console.WriteLine();
+        Console.WriteLine("SymDir short codes allow for quick typing of the action you wanna do.");
+        Console.WriteLine("Arguments in short codes are seperated via commas (,).");
+        Console.WriteLine("Following actions are available:");
+        foreach (KeyValuePair<string,string> availableAction in availableActions)
+        {
+            Console.WriteLine(availableAction.Key + ": " + availableAction.Value);
+        }
+        Console.WriteLine();
+        Console.WriteLine(rangeHelp);
     }
 }

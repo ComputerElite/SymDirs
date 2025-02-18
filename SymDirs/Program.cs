@@ -7,6 +7,11 @@ class Program
         MainWindow w = new MainWindow();
 
         string arg = String.Join(' ', args);
+        if (arg.EndsWith("help"))
+        {
+            MainWindow.ShowHelp();
+            return;
+        }
 
         do
         {

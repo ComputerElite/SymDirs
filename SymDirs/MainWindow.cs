@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 
@@ -18,6 +20,7 @@ public class MainWindow
         {"6,<range of source dirs>", "Remove source directory"},
         {"7,<range of target dirs>", "Remove target directory"},
         {"8", "Update sources based on subdirectories"},
+        {"9", "Settings"}
     };
 
     private const string rangeHelp = "Range examples e. g. ('0-6', '2 3 6'). Alternatively a part of the directory path (e. g. 'beastars season 1')";
@@ -28,8 +31,8 @@ public class MainWindow
         if (arg == "")
         {
             Console.ForegroundColor = ConsoleColor.White;
-            Console.Clear();
-            Console.SetCursorPosition(0, 0);
+            //Console.Clear();
+            //Console.SetCursorPosition(0, 0);
         }
         Console.WriteLine("SymDirs");
         Console.WriteLine("-------");
@@ -44,14 +47,14 @@ public class MainWindow
         }
         Console.WriteLine(availableActionsString);
         Console.Write("Action: ");
-        string read = arg != "" ? arg : Console.ReadLine();
-        List<string> actions = read.Split(',').ToList();
+        string? read = arg != "" ? arg : Console.ReadLine();
+        List<string> actions = read == null ? [] : read.Split(',').ToList();
         string action = actions[0];
         actions.RemoveAt(0);
         Console.WriteLine();
         state = "";
         
-        switch (action[0])
+        switch (action.Length > 0 ? action[0] : ' ')
         {
             case '1':
                 Console.Write("Add subdirectories? (Y/n): ");
@@ -200,8 +203,33 @@ public class MainWindow
                 state = $"Added {StateCreator.UpdateSubdirsInConfig(config)} new source directories from {config.SourceDirectorySources.Count} directories";
                 SaveAndApply();
                 break;
+            case '9':
+                Settings();
+                break;
         }
         if (arg != "") Console.WriteLine("\n" + state);
+    }
+
+    private void Settings()
+    {
+        Console.WriteLine();
+        Console.WriteLine();
+        Console.WriteLine("---Settings---");
+        Console.WriteLine();
+        Console.WriteLine("[0] Toggle Sync new files in target directories with source directories");
+        Console.WriteLine("       -> currently: " + config.AllowTargetToSourceFileAdding);
+        Console.WriteLine();
+        
+        Console.Write("Action: ");
+        string read = Console.ReadLine();
+        switch (read.Length > 0 ? read[0] : ' ')
+        {
+            case '0':
+                config.AllowTargetToSourceFileAdding = !config.AllowTargetToSourceFileAdding;
+                state = "Option is now " + config.AllowTargetToSourceFileAdding;
+                config.Save();
+                break;
+        }
     }
 
     private void SaveAndApply()
@@ -319,5 +347,9 @@ public class MainWindow
         }
         Console.WriteLine();
         Console.WriteLine(rangeHelp);
+        Console.WriteLine();
+        Console.WriteLine("Examples:");
+        Console.WriteLine("'3,e0-3,1 3'     Link source folder 0, 1, 2, 3 to target folders 1 and 3");
+        Console.WriteLine("'1,y,/home/user/media/beastars'     Add all subdirectories of '/home/user/media/beastars season 1' as source directories");
     }
 }

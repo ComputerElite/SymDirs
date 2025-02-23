@@ -1,3 +1,4 @@
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,6 +10,7 @@ public class Config
     public List<ConfigDirectory> SourceDirectories { get; set; } = new List<ConfigDirectory>();
     public List<string> SourceDirectorySources { get; set; } = new List<string>();
     public List<ConfigDirectory> TargetDirectories { get; set; } = new List<ConfigDirectory>();
+    public bool AllowTargetToSourceFileAdding { get; set; } = true;
 
     public static string GetConfigDirectory()
     {
@@ -86,10 +88,7 @@ public class Config
         foreach(ConfigDirectory dir in TargetDirectories)
         {
             if (dir.Path == null) continue;
-            Console.WriteLine(dir.Path);
-            Console.WriteLine(Path.IsPathRooted(dir.Path));
-            string path = Path.GetFullPath(Path.Combine(dir.Path, "symdirs.config.json"));
-            Console.WriteLine(path);
+            string path = Path.GetFullPath(Path.Combine(dir.Path, "symdirs." + Dns.GetHostName() + ".config.json"));
             File.WriteAllText(path, json);
         }
     }
@@ -115,6 +114,7 @@ public class ConfigDirectory
     public string? Path { get; set; } = null;
     public List<string?> LinkedBy { get; set; } = new ();
     public List<ConfigDirectory> Links = new ();
+    public List<string> presentFiles { get; set; } = new ();
     public Dictionary<string, List<string>> MissingContent { get; set; } = new ();
 
     public string? Name => System.IO.Path.GetFileName(Path);

@@ -133,17 +133,11 @@ public class MainWindow
                                 ConfigDirectory targetDir = config.TargetDirectories[target];
                                 if (enable == null && sourceDir.Links.Contains(targetDir) || enable.HasValue && !enable.Value)
                                 {
-                                    Console.WriteLine("Disabling");
                                     sourceDir.Remove(targetDir);
                                 }
                                 else if(enable == null && !enable.HasValue || enable.Value)
                                 {
-                                    Console.WriteLine("enabling");
                                     sourceDir.Add(targetDir);
-                                }
-                                else
-                                {
-                                    Console.WriteLine("neither");
                                 }
                             }
                         }

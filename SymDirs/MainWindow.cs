@@ -63,6 +63,7 @@ public class MainWindow
                 Console.WriteLine();
                 Console.Write("Path: ");
                 string path = actions.Count >= 1 ? String.Join(',', actions) : Console.ReadLine();
+                if(path.EndsWith("/")) path = path.Substring(0, path.Length - 1);
                 if (path.Trim() == "") break;
                 int added = 0;
                 if (subdirs)    
@@ -107,6 +108,7 @@ public class MainWindow
                         enable = e;
                         expression = expression.Substring(1);
                     }
+                    Console.WriteLine(expression);
                     List<int> sources = new List<int>();
                     List<int> targets = new List<int>();
                     if (expression.Contains(","))
@@ -131,11 +133,17 @@ public class MainWindow
                                 ConfigDirectory targetDir = config.TargetDirectories[target];
                                 if (enable == null && sourceDir.Links.Contains(targetDir) || enable.HasValue && !enable.Value)
                                 {
+                                    Console.WriteLine("Disabling");
                                     sourceDir.Remove(targetDir);
+                                }
+                                else if(enable == null && !enable.HasValue || enable.Value)
+                                {
+                                    Console.WriteLine("enabling");
+                                    sourceDir.Add(targetDir);
                                 }
                                 else
                                 {
-                                    sourceDir.Add(targetDir);
+                                    Console.WriteLine("neither");
                                 }
                             }
                         }
@@ -246,7 +254,7 @@ public class MainWindow
         {
             if(part.Trim() == "") continue;
             
-            if (!Regex.IsMatch(part.Trim(), @"^[0-9]+$"))
+            if (!Regex.IsMatch(part.Trim(), @"^([0-9]+-?)+$"))
             {
                 // Perhaps it's a directory
                 ICollection<ConfigDirectory> dirs =
@@ -291,7 +299,7 @@ public class MainWindow
         foreach (var dir in config?.SourceDirectories ?? [])
         {
             if (dir.Path == null) continue;
-            if (dir.NameLength > longestFolder) longestFolder = dir.NameLength;
+            if (dir.DisplayNameLength > longestFolder) longestFolder = dir.DisplayNameLength;
         }
 
         int longestNumber = config?.SourceDirectories.Count.ToString().Length ?? 0;
@@ -302,22 +310,24 @@ public class MainWindow
         Console.Write("".PadRight(longestFolder + longestNumber));
         foreach (ConfigDirectory targetDirectory in config?.TargetDirectories ?? [])
         {
-            Console.Write(i.ToString().PadLeft(targetDirectory.NameLength / 2).PadRight(targetDirectory.NameLength + 2));
+            Console.Write(i.ToString().PadLeft(targetDirectory.DisplayNameLength / 2).PadRight(targetDirectory.DisplayNameLength + 2));
             i++;
         }
         Console.WriteLine();
         Console.Write("".PadRight(longestFolder + longestNumber));
         foreach (ConfigDirectory targetDirectory in config?.TargetDirectories ?? [])
         {
-            Console.Write(targetDirectory.Name?.PadRight(targetDirectory.NameLength + 2));
+            Console.Write(targetDirectory.DisplayName?.PadRight(targetDirectory.DisplayNameLength + 2));
         }
         Console.WriteLine();
 
         i = 0;
         foreach (ConfigDirectory sourceDir in config?.SourceDirectories ?? [])
         {
+            if (!sourceDir.Exists) Console.ForegroundColor = ConsoleColor.Red;
             Console.Write(i.ToString().PadRight(longestNumber));
-            Console.Write(sourceDir.Name?.PadRight(longestFolder));
+            Console.Write(sourceDir.DisplayName?.PadRight(longestFolder));
+            Console.ForegroundColor = ConsoleColor.White;
             foreach (ConfigDirectory targetDirectory in config?.TargetDirectories ?? [])
             {
                 bool linked = sourceDir.Links.Contains(targetDirectory);
@@ -325,7 +335,7 @@ public class MainWindow
                 Console.ForegroundColor = linked ? ConsoleColor.Green : ConsoleColor.Red;
                 if(linked && partialContent) Console.ForegroundColor = ConsoleColor.Yellow;
                 string text = linked ? $"Y{(partialContent ? " (p)" : "")}" : "N";
-                Console.Write(text.PadLeft(targetDirectory.NameLength / 2 + text.Length / 2).PadRight(targetDirectory.NameLength + 2));
+                Console.Write(text.PadLeft(targetDirectory.DisplayNameLength / 2 + text.Length / 2).PadRight(targetDirectory.DisplayNameLength + 2));
             }
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine();

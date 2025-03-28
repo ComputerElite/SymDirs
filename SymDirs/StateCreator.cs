@@ -33,7 +33,7 @@ public class StateCreator
                 bool linked = sourceDirectory.Links.Contains(targetDirectory);
                 string targetPath = Path.Combine(targetDirectory.Path, sourceDirectory.Name);
                 if (!linked) continue;
-                targetDirectory.MissingContent.Add(sourceDirectory.Path, CheckState(targetPath, sourceDirectory.Path));
+                targetDirectory.MissingContent.Add(sourceDirectory.Path, CheckState(targetPath, sourceDirectory));
             }
         }
     }
@@ -50,7 +50,7 @@ public class StateCreator
                 if (targetDirectory.Path == null) continue;
                 bool linked = sourceDirectory.Links.Contains(targetDirectory);
                 string targetPath = Path.Combine(targetDirectory.Path, sourceDirectory.Name);
-                if (linked)
+                if (linked && sourceDirectory.Exists)
                 {
                     LinkAllFiles(targetPath, sourceDirectory.Path, sourceDirectory, targetDirectory, newFiles, config);
                     continue;
@@ -69,13 +69,18 @@ public class StateCreator
         CheckState(config);
     }
     
-    public static List<string> CheckState(string targetDirectory, string sourceDirectory)
+    public static List<string> CheckState(string targetDirectory, ConfigDirectory sourceDirectory)
     {
         // Link all files
         List<string> missingFiles = new List<string>();
-        foreach (string newPath in Directory.GetFiles(sourceDirectory, "*.*", SearchOption.AllDirectories))
+        if (!Directory.Exists(sourceDirectory.Path))
         {
-            string newFilePath = newPath.Replace(sourceDirectory, targetDirectory);
+            sourceDirectory.Exists = false;
+            return [];
+        }
+        foreach (string newPath in Directory.GetFiles(sourceDirectory.Path, "*.*", SearchOption.AllDirectories))
+        {
+            string newFilePath = newPath.Replace(sourceDirectory.Path, targetDirectory);
             if (File.Exists(newFilePath)) continue;
             missingFiles.Add(newFilePath);
         }

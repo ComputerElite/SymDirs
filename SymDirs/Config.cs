@@ -118,8 +118,11 @@ public class ConfigDirectory
     public Dictionary<string, List<string>> MissingContent { get; set; } = new ();
 
     public string? Name => System.IO.Path.GetFileName(Path);
+    public string? DisplayName => Name + (Exists ? "" : " (missing)");
     [JsonIgnore]
-    public int NameLength => Name?.Length ?? 0;
+    public int DisplayNameLength => DisplayName?.Length ?? 0;
+
+    public bool Exists { get; set; } = true;
 
     public void Remove(ConfigDirectory targetDir)
     {

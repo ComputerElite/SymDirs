@@ -20,7 +20,9 @@ public class MainWindow
         {"6,<range of source dirs>", "Remove source directory"},
         {"7,<range of target dirs>", "Remove target directory"},
         {"8", "Update sources based on subdirectories"},
-        {"9", "Settings"}
+        {"9", "Settings"},
+        
+        {"0", "Debugging"}
     };
 
     private const string rangeHelp = "Range examples e. g. ('0-6', '2 3 6'). Alternatively a part of the directory path (e. g. 'beastars season 1')";
@@ -40,12 +42,7 @@ public class MainWindow
         Console.WriteLine(state);
         Console.WriteLine();
         ListState();
-        string availableActionsString = "";
-        foreach (KeyValuePair<string,string> keyValuePair in availableActions)
-        {
-            availableActionsString += $"[{keyValuePair.Key.Substring(0, 1)}] {keyValuePair.Value}{(keyValuePair.Key.StartsWith("4") ? "\n" : "  ")}";
-        }
-        Console.WriteLine(availableActionsString);
+        InstructionHelper.PrintInstructions(availableActions);
         Console.Write("Action: ");
         string? read = arg != "" ? arg : Console.ReadLine();
         List<string> actions = read == null ? [] : read.Split(',').ToList();
@@ -207,6 +204,9 @@ public class MainWindow
                 break;
             case '9':
                 Settings();
+                break;
+            case '0':
+                new IndexingWindow().Show();
                 break;
         }
         if (arg != "") Console.WriteLine("\n" + state);

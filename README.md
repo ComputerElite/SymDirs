@@ -10,6 +10,10 @@ SymDirs allows to manage links from my video folder to my syncing folders with l
 
 I use hard links for the files themselves as those allow to be synced via SyncThing. Symbolic links of directories are not supported by it.
 
+## ToDo
+- [ ] Internal MySQL database with file system state (files + hashes + modified date + synced status)
+
+
 ### Why use SymDirs?
 - No need to copy files
 - You can add an entire folder to be synced with a few commands

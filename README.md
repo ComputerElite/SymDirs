@@ -3,8 +3,10 @@ C# console application to manage hard links and keep them synced
 
 ## SymDirDaemon
 The SymDirDaemon is a new mode of SymDirs which is currently in development.
-The goal is to keep multiple folders in sync with each other by using hard links.
+The goal is to keep multiple folders on the same device in sync with each other by using hard links.
 It will automatically detect changes in one of the folder and apply them to the others.
+
+All this without storing multiple copies of the same file on the device as hard links will just reference the same bytes on the drive.
 
 ### How?
 You can specify a source directory (=Folder in Syncthing). This folder can then be synced with a target directory (=Device).
@@ -41,6 +43,13 @@ This way the tablet can receive the notes folder quickly from the PC via the loc
 This requires each source folder to have a unique ID which is used to identify the folder in SymDirs.
 Every device needs to keep a list of local paths for the folder IDs so automatic syncing can be done.
 
+### Shared Config
+- Folder ids for source and target folders
+- Active links between source and target folders
+
+### Per Device config
+- Path to folder id mapping
+
 ## Original Intention
 I have a video library on my PC I wanna share with my tablet and phone for on the go watching. To do this I use SyncThing.
 
@@ -51,7 +60,10 @@ SymDirs allows to manage links from my video folder to my syncing folders with l
 I use hard links for the files themselves as those allow to be synced via SyncThing. Symbolic links of directories are not supported by it.
 
 ## ToDo
-- [ ] Internal MySQL database with file system state (files + hashes + modified date + synced status)
+- [x] Internal MySQL database with file system state (files + hashes + modified date + synced status)
+- [ ] Sync algorithm
+- [ ] Error tracking
+- [ ] Local path to ID mapping
 
 
 ### Why use SymDirs?

@@ -16,7 +16,32 @@ SymDirs uses hard links to link the files in the source directory to the target 
 
 A FileSystemWatcher is used to detect changes in any of the directories.
 
-## Intention
+### Integration with Syncthing
+SymDirs needs to integrate with Syncthing to keep the folders in sync.
+
+Let's assume following Syncthing topology:
+![topology.png](topology.png)
+
+Furthermore, let's assume all SymDirs configuration changes are done via a Website on the NAS.
+
+When you add the Tablet target to the notes source on the NAS the following would happen:
+1. NAS creates a link from the notes source to the tablet target
+2. Syncthing detects the notes folder and starts syncing it to the tablet
+
+The issue here is that the NAS only syncs slowly to the tablet due to a slow internet connection.
+
+Wanted behavior:
+1. NAS creates a link from the notes source to the tablet target
+2. The config change is synced to PC via Syncthing
+3. The PC detects the config change and creates a link from the notes source to the tablet target
+4. The PC and NAS start syncing the notes folder to the tablet via Syncthing
+
+This way the tablet can receive the notes folder quickly from the PC via the local network.
+
+This requires each source folder to have a unique ID which is used to identify the folder in SymDirs.
+Every device needs to keep a list of local paths for the folder IDs so automatic syncing can be done.
+
+## Original Intention
 I have a video library on my PC I wanna share with my tablet and phone for on the go watching. To do this I use SyncThing.
 
 Thus I want to have a folder on my PC that contains all the videos I want to share. Then also folders which I sync to my phone and tablet.

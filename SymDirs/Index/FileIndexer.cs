@@ -47,10 +47,15 @@ public class FileIndexer
                 // The file does not exist and was not tracked. This should return null then.
                 return null;
             }
-            file.LastModified = File.GetLastWriteTime(path);
+
+            FileInfo fileInfo = new FileInfo(path);
+            file.LastModified = fileInfo.LastWriteTimeUtc;
+            file.ByteSize = fileInfo.Length;
             
             // Only hash the file if it's been modified according to the modified date
-            if(file.LastModified != oldEntry?.LastModified || rehashIfModifiedDataHasntChanged) file.Hash = HashFile(path);
+            if(file.LastModified != oldEntry?.LastModified
+               || file.ByteSize != oldEntry?.ByteSize
+               || rehashIfModifiedDataHasntChanged) file.Hash = HashFile(path);
             else file.Hash = oldEntry.Hash;
             
             // The file hasn't been tracked before; therefore, it's new

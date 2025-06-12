@@ -206,7 +206,7 @@ public class MainWindow
                 Settings();
                 break;
             case '0':
-                new IndexingWindow().Show();
+                new IndexingWindow(config).Show();
                 break;
         }
         if (arg != "") Console.WriteLine("\n" + state);

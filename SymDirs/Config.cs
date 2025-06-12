@@ -5,12 +5,53 @@ using System.Text.Json.Serialization;
 
 namespace SymDirs;
 
+public class BaseConfig
+{
+    private string _path = "config.json";
+    protected static T Load<T>(string path) where T : BaseConfig, new()
+    {
+        if (!File.Exists(path))
+        {
+            // Create a new config file if it does not exist
+            File.WriteAllText(path, "{}");
+        }
+        T config = new T();
+        try
+        {
+            config = JsonSerializer.Deserialize<T>(File.ReadAllText(path)) ?? new T();
+        }
+        catch (Exception e)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Error loading config from {path}: {e}");
+        }
+
+        config._path = path;
+        return config;
+    }
+
+    protected void Save<T>(T config) where T : BaseConfig
+    {
+        try
+        {
+            File.WriteAllText(_path, JsonSerializer.Serialize(config));
+        }
+        catch (Exception e)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Error saving config to {_path}: {e}");
+        }
+    }
+}
+
 public class Config
 {
-    public List<ConfigDirectory> SourceDirectories { get; set; } = new List<ConfigDirectory>();
-    public List<string> SourceDirectorySources { get; set; } = new List<string>();
-    public List<ConfigDirectory> TargetDirectories { get; set; } = new List<ConfigDirectory>();
+    public List<ConfigDirectory> SourceDirectories { get; set; } = new ();
+    public List<string> SourceDirectorySources { get; set; } = new ();
+    public List<ConfigDirectory> TargetDirectories { get; set; } = new ();
     public bool AllowTargetToSourceFileAdding { get; set; } = true;
+    public string LocalConfigPath { get; set; } = Path.Combine(GetConfigDirectory(), "localconfig." + Dns.GetHostName() + ".json");
+    public string SyncedConfigPath { get; set; } = Path.Combine(GetConfigDirectory(), "syncedconfig.json");
 
     public static string GetConfigDirectory()
     {

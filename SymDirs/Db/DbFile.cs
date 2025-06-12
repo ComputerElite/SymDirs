@@ -24,6 +24,7 @@ public class DbFile
     
     public string FullPath { get; set; } = "";
     public byte[] Hash { get; set; } = [];
+    public long ByteSize { get; set; } = 0;
     public DateTime LastModified { get; set; } = DateTime.MinValue;
     public DateTime? LastSync { get; set; } = null;
     public DbFileState State { get; set; } = DbFileState.Unknown;

@@ -2,16 +2,26 @@ using System.Data.SqlTypes;
 using Microsoft.EntityFrameworkCore;
 using SymDirs.Db;
 using SymDirs.Index;
+using SymDirs.Syncing;
 
 namespace SymDirs;
 
 public class IndexingWindow
 {
+    public Config config;
+    public SyncedConfig sharedConfig;
+    public LocalConfig localConfig;
+    public IndexingWindow(Config config) 
+    {
+        this.config = config;
+    }
+    
     public static Dictionary<string, string> availableActions = new()
     {
         {"1", "Index directory and save to db"},
         {"2", "Mock Sync (moves all files from changed to synced)"},
         {"3", "Apply database migrations"},
+        {"4", "Set shared config path"},
         {"9", "Main Menu"},
     };
     
@@ -69,6 +79,23 @@ public class IndexingWindow
                         db.Database.Migrate();
                     }
                     Console.WriteLine("Database migrations applied.");
+                    break;
+                case '4':
+                    Console.Write("Enter path to shared config: ");
+                    string? sharedConfigPath = Console.ReadLine();
+                    if (sharedConfigPath == null)
+                    {
+                        Console.WriteLine("Invalid path.");
+                        continue;
+                    }
+
+                    if (!File.Exists(sharedConfigPath))
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine("Shared config file does not exist, creating new one.");
+                        Console.ResetColor();
+                    }
+                    sharedConfig = SyncedConfig.Load(sharedConfigPath);
                     break;
                 case '9':
                     return;

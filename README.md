@@ -50,6 +50,11 @@ Every device needs to keep a list of local paths for the folder IDs so automatic
 ### Per Device config
 - Path to folder id mapping
 
+### Folder Marker
+A folder marker will be used to identify a folder's id. ONLY if the folder marker id matches the folder id will SymDirs perform operations on it.
+
+**Name**: `.symdirs`
+
 ## Original Intention
 I have a video library on my PC I wanna share with my tablet and phone for on the go watching. To do this I use SyncThing.
 
@@ -63,6 +68,7 @@ I use hard links for the files themselves as those allow to be synced via SyncTh
 - [x] Internal MySQL database with file system state (files + hashes + modified date + synced status)
 - [ ] Sync algorithm
 - [ ] Error tracking
+- [ ] Folder marker
 - [ ] Local path to ID mapping
 
 

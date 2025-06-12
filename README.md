@@ -1,5 +1,20 @@
 # SymDirs
-C# console application to manage symbolic links
+C# console application to manage hard links and keep them synced
+
+## SymDirDaemon
+The SymDirDaemon is a new mode of SymDirs which is currently in development.
+The goal is to keep multiple folders in sync with each other by using hard links.
+It will automatically detect changes in one of the folder and apply them to the others.
+
+### How?
+You can specify a source directory (=Folder in Syncthing). This folder can then be synced with a target directory (=Device).
+The synced folder will then be a subfolder of the target directory.
+Therefore you can e. g. have one folder you Sync to your phone and then just link everything you want on your phone with that one target folder.
+This eliminates the need to sync multiple folders in Syncthing. Instead you'll just have one which also syncs back to the folder on your pc (phone -> syncthing on phone -> syncthing on pc -> sync with source directory via SymDirs).
+
+SymDirs uses hard links to link the files in the source directory to the target directory. Syncthing does not support Symbolic links of folder atm, therefore the need to have a daemon which syncs hard links.
+
+A FileSystemWatcher is used to detect changes in any of the directories.
 
 ## Intention
 I have a video library on my PC I wanna share with my tablet and phone for on the go watching. To do this I use SyncThing.

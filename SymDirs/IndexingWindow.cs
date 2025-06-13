@@ -27,6 +27,7 @@ public class IndexingWindow
     
     public void Show()
     {
+        localConfig = LocalConfig.Load(config.LocalConfigPath);
         while (true)
         {
             Console.WriteLine("SymDirs");
@@ -81,21 +82,22 @@ public class IndexingWindow
                     Console.WriteLine("Database migrations applied.");
                     break;
                 case '4':
-                    Console.Write("Enter path to shared config: ");
-                    string? sharedConfigPath = Console.ReadLine();
-                    if (sharedConfigPath == null)
+                    Console.Write("Enter path to synced config: ");
+                    string? syncedConfigPath = Console.ReadLine();
+                    if (syncedConfigPath == null)
                     {
                         Console.WriteLine("Invalid path.");
                         continue;
                     }
 
-                    if (!File.Exists(sharedConfigPath))
+                    if (!File.Exists(syncedConfigPath))
                     {
                         Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine("Shared config file does not exist, creating new one.");
+                        Console.WriteLine("Synced config file does not exist, creating new one.");
                         Console.ResetColor();
                     }
-                    sharedConfig = SyncedConfig.Load(sharedConfigPath);
+                    config.SyncedConfigPath = syncedConfigPath;
+                    sharedConfig = SyncedConfig.Load(syncedConfigPath, localConfig);
                     break;
                 case '9':
                     return;

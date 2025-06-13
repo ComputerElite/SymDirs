@@ -20,4 +20,9 @@ public class LocalConfig : BaseConfig
     }
     
     public List<LocalDirectory> Directories { get; set; } = new();
+
+    public LocalDirectory? GetDirectoryById(string id)
+    {
+        return Directories.FirstOrDefault(x => x.Id == id);
+    }
 }

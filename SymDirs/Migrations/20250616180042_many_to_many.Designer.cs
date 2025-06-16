@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SymDirs.Db;
 
@@ -10,14 +11,16 @@ using SymDirs.Db;
 namespace SymDirs.Migrations
 {
     [DbContext(typeof(Database))]
-    partial class DatabaseModelSnapshot : ModelSnapshot
+    [Migration("20250616180042_many_to_many")]
+    partial class many_to_many
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
 
-            modelBuilder.Entity("DbConfigDirectoryDbFile", b =>
+            modelBuilder.Entity("DbFileSyncedConfigDirectory", b =>
                 {
                     b.Property<string>("DbFileId")
                         .HasColumnType("TEXT");
@@ -29,17 +32,7 @@ namespace SymDirs.Migrations
 
                     b.HasIndex("SyncedWithId");
 
-                    b.ToTable("DbConfigDirectoryDbFile");
-                });
-
-            modelBuilder.Entity("SymDirs.Db.DbConfigDirectory", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ConfigDirectories");
+                    b.ToTable("DbFileSyncedConfigDirectory");
                 });
 
             modelBuilder.Entity("SymDirs.Db.DbFile", b =>
@@ -85,7 +78,28 @@ namespace SymDirs.Migrations
                     b.ToTable("Files");
                 });
 
-            modelBuilder.Entity("DbConfigDirectoryDbFile", b =>
+            modelBuilder.Entity("SymDirs.Syncing.SyncedConfigDirectory", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FolderName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsSourceDirectory")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SyncedConfigDirectories");
+                });
+
+            modelBuilder.Entity("DbFileSyncedConfigDirectory", b =>
                 {
                     b.HasOne("SymDirs.Db.DbFile", null)
                         .WithMany()
@@ -93,7 +107,7 @@ namespace SymDirs.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SymDirs.Db.DbConfigDirectory", null)
+                    b.HasOne("SymDirs.Syncing.SyncedConfigDirectory", null)
                         .WithMany()
                         .HasForeignKey("SyncedWithId")
                         .OnDelete(DeleteBehavior.Cascade)

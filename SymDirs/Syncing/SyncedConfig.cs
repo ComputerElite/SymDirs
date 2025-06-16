@@ -43,6 +43,31 @@ public class SyncedConfig : BaseConfig
             return x;
         }).ToList();
     }
+
+    public SyncedConfigDirectory? GetSourceDirectoryById(string id)
+    {
+        SyncedConfigDirectory? dir = SourceDirectories.FirstOrDefault(x => x.Id == id);
+        if (dir == null)
+            return null;
+        dir.LocalDirectory = _localConfig.GetDirectoryById(id);
+        return dir;
+    }
+    public List<SyncedConfigDirectory> GetTargetDirectories()
+    {
+        return TargetDirectories.Select(x =>
+        {
+            x.LocalDirectory = _localConfig.GetDirectoryById(x.Id);
+            return x;
+        }).ToList();
+    }
+    public SyncedConfigDirectory? GetTargetDirectoryById(string id)
+    {
+        SyncedConfigDirectory? dir = TargetDirectories.FirstOrDefault(x => x.Id == id);
+        if (dir == null)
+            return null;
+        dir.LocalDirectory = _localConfig.GetDirectoryById(id);
+        return dir;
+    }
     
     /// <summary>
     /// Gets a list of all directories that exist in the config.
@@ -92,7 +117,7 @@ public class SyncedConfig : BaseConfig
         return result;
     }
 
-    public BooleanMessage<SyncedConfigDirectory> InternalAddDirectory(string path)
+    private BooleanMessage<SyncedConfigDirectory> _internalAddDirectory(string path)
     {
         // Check whether the directory even exists
         if (!Directory.Exists(path))
@@ -102,6 +127,7 @@ public class SyncedConfig : BaseConfig
         
         SyncedConfigDirectory dir = new();
         dir.FolderName = Path.GetFileName(path);
+        dir.DisplayName = dir.FolderName;
         
         // If it does exist, check whether it has a folder marker
         string? directoryId = FolderMarker.GetIdOfDirectory(path);
@@ -148,7 +174,7 @@ public class SyncedConfig : BaseConfig
     /// <returns></returns>
     public BooleanMessage AddSourceDirectory(string path)
     {
-        BooleanMessage<SyncedConfigDirectory> result = InternalAddDirectory(path);
+        BooleanMessage<SyncedConfigDirectory> result = _internalAddDirectory(path);
         if (!result.Success || result.Data == null)
         {
             return new BooleanMessage("Failed to add source directory: " + result.Message, false);
@@ -165,7 +191,7 @@ public class SyncedConfig : BaseConfig
     /// <returns></returns>
     public BooleanMessage AddTargetDirectory(string path)
     {
-        BooleanMessage<SyncedConfigDirectory> result = InternalAddDirectory(path);
+        BooleanMessage<SyncedConfigDirectory> result = _internalAddDirectory(path);
         if (!result.Success || result.Data == null)
         {
             return new BooleanMessage("Failed to add source directory: " + result.Message, false);
@@ -173,5 +199,57 @@ public class SyncedConfig : BaseConfig
         result.Data.IsSourceDirectory = false;
         TargetDirectories.Add(result.Data);
         return new BooleanMessage("Source directory '" + result.Data.FolderName + "' added with ID '" + result.Data.Id + "'", true);
+    }
+
+    public BooleanMessage CreateLink(string sourceDirectoryId, string targetDirectoryId)
+    {
+        SyncedConfigDirectory? sourceDir = GetSourceDirectoryById(sourceDirectoryId);
+        if (sourceDir == null)
+            return new BooleanMessage($"A source directory with the Id '{sourceDirectoryId}' does not exist", false);
+        SyncedConfigDirectory? targetDir = GetTargetDirectoryById(targetDirectoryId);
+        if (targetDir == null)
+            return new BooleanMessage($"A target directory with the Id '{targetDirectoryId}' does not exist", false);
+        targetDir.SetSyncedWithDirectory(sourceDir);
+        // Check whether the target dir root (subdir of the target dir) has the id of the source dir.
+        string? targetRootPath = targetDir.GetRootDirectoryForSyncingOperations();
+        if (targetRootPath == null)
+        {
+            return new BooleanMessage("Target directory could not resolve a root directory, that's unusual ;-;", false);
+        }
+
+        if (!Directory.Exists(targetRootPath))
+        {
+            Directory.CreateDirectory(targetRootPath);
+        }
+
+        string? detectedTargetDirId = FolderMarker.GetIdOfDirectory(targetRootPath);
+        if (detectedTargetDirId != null && detectedTargetDirId != sourceDirectoryId)
+        {
+            return new BooleanMessage(
+                $"The target directory '{targetRootPath}' already has a folder marker with the ID '{detectedTargetDirId}', which does not match the source directory ID '{sourceDirectoryId}'. Therefore the link will not be created.",
+                false);
+        }
+
+        BooleanMessage folderMarkerCreatedMessage =
+            FolderMarker.CreateDirectoryMarker(targetRootPath, sourceDirectoryId);
+        if (!folderMarkerCreatedMessage.Success)
+        {
+            return new BooleanMessage(
+                $"Failed to create folder marker for target directory '{targetRootPath}': {folderMarkerCreatedMessage.Message}",
+                false);
+        }
+
+        SyncedConfigSyncedDirectory syncedDirectory = new()
+        {
+            SourceDirectoryId = sourceDir.Id,
+            TargetDirectoryId = targetDir.Id
+        };
+        SyncedDirectories.Add(syncedDirectory);
+        return new BooleanMessage($"Link created between source directory '{sourceDir.Id}' ({sourceDir.GetRootDirectoryForSyncingOperations()}) and target directory '{targetDir.FolderName}' ({targetRootPath})", true);
+    }
+
+    public BooleanMessage RemoveLink(string sourceDirectoryId, string targetDirectoryId)
+    {
+        return new BooleanMessage("This feature is not implemented yet.", false);
     }
 }

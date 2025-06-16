@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace SymDirs.Syncing;
@@ -37,15 +38,52 @@ public class SyncedConfigDirectory
     /// Reference to the info for the directory on the local filesystem.
     /// </summary>
     [JsonIgnore]
+    [NotMapped]
     public LocalDirectory? LocalDirectory { get; set; } = null;
     
     /// <summary>
     /// If the directory is located in other known directories, these will be listed here.
     /// </summary>
+    [NotMapped]
     public List<SyncedConfigParentDirectory> LocatedIn { get; set; } = new();
 
+    /// <summary>
+    /// Return the root directory to use for all syncing operations (Target directories must have the _syncedWith property set).
+    ///
+    /// On TargetDirectories with the _syncedWith property set, this will return the path to the folder that is synced with the respective source directory.
+    /// </summary>
+    /// <returns></returns>
+    public string? GetRootDirectoryForSyncingOperations()
+    {
+        if (IsSourceDirectory) return LocalDirectory?.GetPathWithTrailingSlash();
+        if (LocalDirectory == null || _syncedWith == null) return null;
+        if (_syncedWith.FolderName.Trim() == string.Empty)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"The source directory {_syncedWith.Id} does not have a folder name set. This is required for syncing to work properly.");
+            return null;
+        }
+        string path = Path.Combine(LocalDirectory.Path, _syncedWith.FolderName);
+        return path.EndsWith(Path.DirectorySeparatorChar) ? path : $"{path}{Path.DirectorySeparatorChar}";
+    }
+
+    /// <summary>
+    /// This will always return the local directory path for indexing operations. This means it is not affected by the _syncedWith property.
+    /// </summary>
+    /// <returns></returns>
+    public string? GetRootDirectoryForIndexingOperations()
+    {
+        if(LocalDirectory == null) return null;
+        return LocalDirectory?.GetPathWithTrailingSlash();
+    }
+    
     public void SetSyncedWithDirectory(SyncedConfigDirectory syncedWith)
     {
         _syncedWith = syncedWith;
+    }
+
+    public override string ToString()
+    {
+        return $"{Id}   {DisplayName} ({FolderName}) - Source: {IsSourceDirectory} - Local: {LocalDirectory?.Path ?? "Not set"}";
     }
 }

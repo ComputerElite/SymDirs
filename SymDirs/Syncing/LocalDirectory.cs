@@ -13,4 +13,14 @@ public class LocalDirectory
             LocalDirectory = this
         };
     }
+
+    public string? GetPathWithTrailingSlash()
+    {
+        if (string.IsNullOrEmpty(Path))
+        {
+            return null;
+        }
+
+        return Path.EndsWith(System.IO.Path.DirectorySeparatorChar) ? Path : $"{Path}{System.IO.Path.DirectorySeparatorChar}";
+    }
 }

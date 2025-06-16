@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SymDirs.Db;
 
@@ -10,37 +11,14 @@ using SymDirs.Db;
 namespace SymDirs.Migrations
 {
     [DbContext(typeof(Database))]
-    partial class DatabaseModelSnapshot : ModelSnapshot
+    [Migration("20250616171145_MapIsSynced_2")]
+    partial class MapIsSynced_2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
-
-            modelBuilder.Entity("DbConfigDirectoryDbFile", b =>
-                {
-                    b.Property<string>("DbFileId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SyncedWithId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("DbFileId", "SyncedWithId");
-
-                    b.HasIndex("SyncedWithId");
-
-                    b.ToTable("DbConfigDirectoryDbFile");
-                });
-
-            modelBuilder.Entity("SymDirs.Db.DbConfigDirectory", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ConfigDirectories");
-                });
 
             modelBuilder.Entity("SymDirs.Db.DbFile", b =>
                 {
@@ -83,21 +61,6 @@ namespace SymDirs.Migrations
                     b.HasIndex("LastSync", "FullPath");
 
                     b.ToTable("Files");
-                });
-
-            modelBuilder.Entity("DbConfigDirectoryDbFile", b =>
-                {
-                    b.HasOne("SymDirs.Db.DbFile", null)
-                        .WithMany()
-                        .HasForeignKey("DbFileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SymDirs.Db.DbConfigDirectory", null)
-                        .WithMany()
-                        .HasForeignKey("SyncedWithId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

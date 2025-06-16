@@ -47,6 +47,7 @@ public class FileIndexer
                     return file;
                 }
                 // The file does not exist and was not tracked. This should return null then.
+                db.Files.Where(x => x.FullPath == path).ExecuteDelete();
                 return null;
             }
 

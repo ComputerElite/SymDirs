@@ -56,6 +56,8 @@ public class SyncController
                 }
                 
             }
+
+            Dictionary<string, bool> uniqueFiles = new();
             foreach (SyncOperation syncOperation in syncOperations)
             {
                 Console.WriteLine($"Executing {syncOperation}");
@@ -82,22 +84,35 @@ public class SyncController
                                 .ExecuteDelete();
                         }
                         break;
+                    case SyncOperationType.Conflict:
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine("Conflict is disabled for now at {syncOperation.SourcePath} to {syncOperation.TargetPath}");
+                        Console.ResetColor();
+                        break;
                     case SyncOperationType.Unchanged:
                         break;
                 }
-                
-                // ToDo: Fix 'UNIQUE constraint failed: DbConfigDirectoryDbFile.DbFileId, DbConfigDirectoryDbFile.SyncedWithId'.
-                db.Files.Where(x =>
-                        x.FullPath == syncOperation.SourcePath || x.FullPath == syncOperation.TargetPath)
-                    .ForEachAsync(x =>
-                    {
-                        x.SyncedWith = syncedWithMapping;
-                        x.LastSync = lastSync;
-                        x.IsSynced = true;
-                    });
+
+                List<DbFile> filesToUpdate = new();
+                foreach (DbFile syncOperationAffectedFile in syncOperation.AffectedFiles)
+                {
+                    if (uniqueFiles.ContainsKey(syncOperationAffectedFile.FullPath)) continue;
+                    syncOperationAffectedFile.SyncedWith = syncedWithMapping;
+                    syncOperationAffectedFile.LastSync = lastSync;
+                    syncOperationAffectedFile.IsSynced = true;
+                    db.Files.Where(x =>
+                            x.FullPath == syncOperationAffectedFile.FullPath)
+                        .ExecuteDelete();
+                    db.Files.Add(syncOperationAffectedFile);
+                }
             }
 
             db.SaveChanges();
+            Console.WriteLine("\n\n__Updated files__");
+            foreach (var keyValuePair in uniqueFiles)
+            {
+                Console.WriteLine(keyValuePair.Key);
+            }
         }
         
     }
@@ -301,7 +316,7 @@ public class SyncController
         using (var db = new Database())
         {
             files = db.Files
-                .Where(x => (!x.IsSynced || neededDirectoryIds.All(y => x.SyncedWith.Any(x => x.Id == y))) && x.FullPath.StartsWith(rootPath)).ToList();
+                .Where(x => (!x.IsSynced || x.IsSynced && !neededDirectoryIds.All(y => x.SyncedWith.Any(x => x.Id == y))) && x.FullPath.StartsWith(rootPath)).ToList();
         }
         files.ForEach(x =>
         {

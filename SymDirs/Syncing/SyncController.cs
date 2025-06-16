@@ -19,7 +19,7 @@ public class SyncController
             {
                 foreach (SyncOperation syncOperation in syncOperations)
                 {
-                    Console.WriteLine(syncOperation.ToString());
+                    syncOperation.PrintToConsole();
                 }
                 continue;
             }

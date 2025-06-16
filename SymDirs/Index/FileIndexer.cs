@@ -147,9 +147,16 @@ public class FileIndexer
     /// <exception cref="NotImplementedException"></exception>
     public void IndexConfig(SyncedConfig syncedConfig, bool rehashIfModifiedDataHasntChanged = false)
     {
-        foreach (SyncedConfigDirectory directory in syncedConfig.GetSourceDirectories())
+        List<SyncedConfigDirectory> directories = syncedConfig.GetSourceDirectories();
+        directories.AddRange(syncedConfig.GetTargetDirectories());
+        foreach (SyncedConfigDirectory directory in directories)
+        {
+            if (!directory.HasCorrectFolderMarkers())
+            {
+                // ToDo: Log error
+                continue;
+            }
             IndexSyncedConfigDirectory(directory, rehashIfModifiedDataHasntChanged);
-        foreach (SyncedConfigDirectory directory in syncedConfig.GetTargetDirectories())
-            IndexSyncedConfigDirectory(directory, rehashIfModifiedDataHasntChanged);
+        }
     }
 }

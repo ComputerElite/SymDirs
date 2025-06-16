@@ -13,6 +13,27 @@ public class SyncOperation
     {
         return $"{Type} {SourcePath} -> {TargetPath}";
     }
+
+    public void PrintToConsole()
+    {
+        switch (Type)
+        {
+            case SyncOperationType.CreateLink:
+                Console.ForegroundColor = ConsoleColor.Green;
+                break;
+            case SyncOperationType.Conflict:
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                break;
+            case SyncOperationType.Delete:
+                Console.ForegroundColor = ConsoleColor.Red;
+                break;
+            case SyncOperationType.Unchanged:
+                Console.ForegroundColor = ConsoleColor.Gray;
+                break;
+        }
+        Console.WriteLine(ToString());
+        Console.ResetColor();
+    }
 }
 
 public enum SyncOperationType

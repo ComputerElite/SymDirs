@@ -49,7 +49,7 @@ class LinkCreator
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-internal static partial class LinuxNativeMethods
+internal static class LinuxNativeMethods
 {
     internal enum LinkErrors
     {
@@ -78,15 +78,12 @@ internal static partial class LinuxNativeMethods
     };
 
 
-    //[LibraryImport("libc", EntryPoint = "link", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
-    //[UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
     [DllImport("libc", SetLastError = true)]
     private static extern int link(string oldpath, string newpath);
 
     internal static void CreateHardLink(string oldFileName,
                                         string newFileName)
     {
-        Console.WriteLine($"{oldFileName} -> {newFileName}");
         if(File.Exists(newFileName)) File.Delete(newFileName);
         string? parentDirectoryPath = Directory.GetParent(newFileName)?.FullName;
         if (parentDirectoryPath == null) throw new Exception("Parent Directory not found");

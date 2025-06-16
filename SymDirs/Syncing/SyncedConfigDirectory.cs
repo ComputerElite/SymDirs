@@ -19,14 +19,11 @@ public class SyncedConfigDirectory
     /// Display name of the directory in the UI.
     /// </summary>
     public string DisplayName { get; set; } = string.Empty;
-    /// <summary>
-    /// Whether the directory has a matching local directory configured
-    /// </summary>
-    public bool CanBeUsed => LocalDirectory != null;
     
     /// <summary>
     /// Shows whether this is a source directory or a target directory.
     /// </summary>
+    [JsonIgnore]
     public bool IsSourceDirectory { get; set; } = true;
     
     /// <summary>
@@ -75,6 +72,41 @@ public class SyncedConfigDirectory
     {
         if(LocalDirectory == null) return null;
         return LocalDirectory?.GetPathWithTrailingSlash();
+    }
+
+    /// <summary>
+    /// Returns the folder marker expected in the root directory for syncing operations
+    /// </summary>
+    /// <returns></returns>
+    public string? GetExpectedFolderMarkerForSyncingOperations()
+    {
+        if (LocalDirectory == null) return null;
+        if(IsSourceDirectory) return Id;
+        if(_syncedWith == null) return null;
+        return _syncedWith.Id;
+    }
+
+    /// <summary>
+    /// Checks for folder markers in the synced directory. It will only return true when the directory is supposed to be used and has the correct markers
+    /// </summary>
+    /// <returns></returns>
+    public bool HasCorrectFolderMarkers()
+    {
+        string? rootDirectoryIndexing = GetRootDirectoryForIndexingOperations();
+        if(rootDirectoryIndexing == null) return false;
+        string? id = FolderMarker.GetIdOfDirectory(rootDirectoryIndexing);
+        if(id == null) return false;
+        if (id != Id) return false;
+        if (!IsSourceDirectory && _syncedWith != null) // If we're linked to a source directory we also check the subdirectory we sync into
+        {
+            string? rootDirectorySyncing = GetRootDirectoryForIndexingOperations();
+            if(rootDirectorySyncing == null) return false;
+            id = FolderMarker.GetIdOfDirectory(rootDirectorySyncing);
+            if(id == null) return false;
+            if (id != GetExpectedFolderMarkerForSyncingOperations()) return false;
+        }
+
+        return true;
     }
     
     public void SetSyncedWithDirectory(SyncedConfigDirectory syncedWith)

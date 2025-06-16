@@ -66,10 +66,12 @@ I use hard links for the files themselves as those allow to be synced via SyncTh
 
 ## ToDo
 - [x] Internal MySQL database with file system state (files + hashes + modified date + synced status)
-- [ ] Sync algorithm
+- [x] Sync algorithm
 - [ ] Error tracking
-- [ ] Folder marker
-- [ ] Local path to ID mapping
+- [x] Folder marker
+- [x] Local path to ID mapping
+- [ ] Handle unlinking of directories properly by deleting the associated Target directory
+- [ ] Check whether correct folder marker exists in config directory
 
 
 ### Why use SymDirs?

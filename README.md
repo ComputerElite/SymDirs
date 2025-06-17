@@ -75,6 +75,7 @@ I use hard links for the files themselves as those allow to be synced via SyncTh
 - [ ] Handle directory syncing (mark them by trailing slash)
 - [ ] Populate LocatedIn
 - [ ] Automatically detect Local directories by LocatedIn directory
+- [ ] Create Tests (And determine what needs testing)
 
 
 ### Why use SymDirs?

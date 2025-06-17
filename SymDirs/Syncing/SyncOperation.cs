@@ -27,7 +27,7 @@ public class SyncOperation
             case SyncOperationType.Delete:
                 Console.ForegroundColor = ConsoleColor.Red;
                 break;
-            case SyncOperationType.Unchanged:
+            case SyncOperationType.UpdateIndex:
                 Console.ForegroundColor = ConsoleColor.Gray;
                 break;
         }
@@ -41,5 +41,5 @@ public enum SyncOperationType
     CreateLink,
     Delete,
     Conflict,
-    Unchanged
+    UpdateIndex
 }

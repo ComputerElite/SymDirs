@@ -77,11 +77,6 @@ public class SyncController
                         {
                             File.Delete(syncOperation.TargetPath);
 
-                            // we need to delete them or they will be maked as synced even though they don't exist.
-                            // Files marked as synced will be checked again and again during full scan indexing
-                            db.Files.Where(x =>
-                                    x.FullPath == syncOperation.SourcePath || x.FullPath == syncOperation.TargetPath)
-                                .ExecuteDelete();
                         }
                         break;
                     case SyncOperationType.Conflict:
@@ -89,7 +84,7 @@ public class SyncController
                         Console.WriteLine("Conflict is disabled for now at {syncOperation.SourcePath} to {syncOperation.TargetPath}");
                         Console.ResetColor();
                         break;
-                    case SyncOperationType.Unchanged:
+                    case SyncOperationType.UpdateIndex:
                         break;
                 }
 
@@ -103,7 +98,9 @@ public class SyncController
                     db.Files.Where(x =>
                             x.FullPath == syncOperationAffectedFile.FullPath)
                         .ExecuteDelete();
-                    db.Files.Add(syncOperationAffectedFile);
+                    // we need to delete them or they will be marked as synced even though they don't exist.
+                    // Files marked as synced will be checked again and again during full scan indexing
+                    if(syncOperation.Type != SyncOperationType.Delete) db.Files.Add(syncOperationAffectedFile);
                 }
             }
 
@@ -250,7 +247,7 @@ public class SyncController
                     // Remove from changed files as we have now processed the file
                     syncOperations.Add(new SyncOperation
                     {
-                        Type = SyncOperationType.Unchanged,
+                        Type = SyncOperationType.UpdateIndex,
                         SourcePath = mostRecentFile.FullPath,
                         TargetPath = changedFiles[i].FullPath,
                         AffectedFiles = [mostRecentFile, changedFiles[i]]
@@ -273,7 +270,7 @@ public class SyncController
             {
                 syncOperations.Add(new SyncOperation
                 {
-                    Type = SyncOperationType.Unchanged,
+                    Type = SyncOperationType.UpdateIndex,
                     SourcePath = mostRecentFile.FullPath,
                     TargetPath = string.Empty,
                     AffectedFiles = [mostRecentFile]

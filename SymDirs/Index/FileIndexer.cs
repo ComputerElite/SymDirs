@@ -85,12 +85,13 @@ public class FileIndexer
     
     public void IndexDirectory(string path, bool rehashIfModifiedDataHasntChanged = false)
     {
-        List<DbFile> files = new List<DbFile>();
         if (!Directory.Exists(path)) return;
+        List<DbFile> files = new List<DbFile>();
         List<string> checkedPaths = new List<string>();
         Console.WriteLine($"Indexing directory {path}...");
         foreach (string filePath in Directory.GetFiles(path, "*.*", SearchOption.AllDirectories))
         {
+            Console.WriteLine(filePath);
             checkedPaths.Add(filePath);
             DbFile? indexedFile = IndexFile(filePath, rehashIfModifiedDataHasntChanged);
             if (indexedFile != null) files.Add(indexedFile);
@@ -98,8 +99,7 @@ public class FileIndexer
 
         using (Database db = new Database())
         {
-            List<string> filePaths = files.Select(x => x.FullPath).ToList();
-            int deletedDuplicates = db.Files.Where(x => !x.IsSynced && filePaths.Contains(x.FullPath)).ExecuteDelete();
+            int deletedDuplicates = db.Files.Where(x => !x.IsSynced && checkedPaths.Contains(x.FullPath)).ExecuteDelete();
             if (deletedDuplicates > 0)
             {
                 Console.WriteLine($"Deleted {deletedDuplicates} duplicate entries from the database.");
@@ -109,7 +109,7 @@ public class FileIndexer
             Console.WriteLine($"Checking {uncheckedFiles.Count} unchecked files...");
             foreach (DbFile uncheckedFile in uncheckedFiles)
             {
-                Console.WriteLine();
+                Console.WriteLine(uncheckedFile.FullPath);
                 DbFile? indexedFile = IndexFile(uncheckedFile.FullPath, rehashIfModifiedDataHasntChanged);
 
                 if (indexedFile != null)

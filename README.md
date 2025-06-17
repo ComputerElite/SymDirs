@@ -70,8 +70,11 @@ I use hard links for the files themselves as those allow to be synced via SyncTh
 - [ ] Error tracking
 - [x] Folder marker
 - [x] Local path to ID mapping
-- [ ] Handle unlinking of directories properly by deleting the associated Target directory
+- [ ] Handle unlinking of directories properly by deleting the associated Target directory. (Check all source directories for existing in target directory and compare with linked property)
 - [ ] Check whether correct folder marker exists in config directory
+- [ ] Handle directory syncing (mark them by trailing slash)
+- [ ] Populate LocatedIn
+- [ ] Automatically detect Local directories by LocatedIn directory
 
 
 ### Why use SymDirs?

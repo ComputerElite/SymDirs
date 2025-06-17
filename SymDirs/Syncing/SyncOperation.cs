@@ -7,7 +7,7 @@ public class SyncOperation
     public string SourcePath { get; set; }
     public string TargetPath { get; set; }
     public SyncOperationType Type { get; set; }
-    public List<DbFile> AffectedFiles = new List<DbFile>();
+    public List<DbFile> AffectedFiles = new ();
 
     public override string ToString()
     {
@@ -28,8 +28,7 @@ public class SyncOperation
                 Console.ForegroundColor = ConsoleColor.Red;
                 break;
             case SyncOperationType.UpdateIndex:
-                Console.ForegroundColor = ConsoleColor.Gray;
-                break;
+                Console.ForegroundColor = ConsoleColor.Gray; break;
         }
         Console.WriteLine(ToString());
         Console.ResetColor();

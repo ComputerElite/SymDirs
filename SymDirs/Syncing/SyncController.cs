@@ -120,6 +120,17 @@ public class SyncController
         // We store this here to avoid multiple calls to GetRootDirectoryForSyncingOperations as it's more expensive than a lookup.
         Dictionary<SyncedConfigDirectory, string> pathByDirectory = new Dictionary<SyncedConfigDirectory, string>();
         
+        // Check directories for folder markers
+        for (int i = 0; i < directories.Count; i++)
+        {
+            if (directories[i].HasCorrectFolderMarkers()) continue;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"{directories[i]} has incorrect or missing folder markers, skipping sync operations in it");
+            Console.ResetColor();
+            directories.RemoveAt(i);
+            i--;
+        }
+        
         directories.ForEach(x =>
         {
             string? syncRoot = x.GetRootDirectoryForSyncingOperations();

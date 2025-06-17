@@ -99,7 +99,7 @@ public class SyncedConfigDirectory
         if (id != Id) return false;
         if (!IsSourceDirectory && _syncedWith != null) // If we're linked to a source directory we also check the subdirectory we sync into
         {
-            string? rootDirectorySyncing = GetRootDirectoryForIndexingOperations();
+            string? rootDirectorySyncing = GetRootDirectoryForSyncingOperations();
             if(rootDirectorySyncing == null) return false;
             id = FolderMarker.GetIdOfDirectory(rootDirectorySyncing);
             if(id == null) return false;

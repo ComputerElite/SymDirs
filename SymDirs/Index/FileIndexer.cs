@@ -153,7 +153,9 @@ public class FileIndexer
         {
             if (!directory.HasCorrectFolderMarkers())
             {
-                // ToDo: Log error
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"The {directory} has no folder markers.");
+                Console.ResetColor();
                 continue;
             }
             IndexSyncedConfigDirectory(directory, rehashIfModifiedDataHasntChanged);

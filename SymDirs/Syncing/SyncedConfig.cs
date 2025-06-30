@@ -250,6 +250,11 @@ public class SyncedConfig : BaseConfig
 
     public BooleanMessage RemoveLink(string sourceDirectoryId, string targetDirectoryId)
     {
-        return new BooleanMessage("This feature is not implemented yet.", false);
+        // This will just unconditionally remove a link, the SyncController will handle everything else in regards to unlinking
+        SyncedConfigSyncedDirectory? syncedDirectory = SyncedDirectories.FirstOrDefault(x => x.SourceDirectoryId == sourceDirectoryId && x.TargetDirectoryId == targetDirectoryId);
+        if (syncedDirectory == null)
+            return new BooleanMessage($"There exists no link between '{sourceDirectoryId}' and '{targetDirectoryId}'", false);
+        SyncedDirectories.Remove(syncedDirectory);
+        return new BooleanMessage($"Link between '{sourceDirectoryId}' and '{targetDirectoryId}' successfully removed", true);
     }
 }

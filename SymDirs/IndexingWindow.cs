@@ -26,7 +26,7 @@ public class IndexingWindow
         {"5", "Add directory"},
         {"6", "Update link"},
         {"7", "Clear changed files table"},
-        {"8", "Perform sync operations based on database"},
+        {"8", "Fix folder markers"},
         {"9", "Main Menu"},
     };
 
@@ -255,7 +255,7 @@ public class IndexingWindow
                         continue;
                     }
                     SyncController syncController = new SyncController();
-                    syncController.ProcessChanges(syncedConfig);
+                    syncController.RestoreFolderMarkerAssistant(syncedConfig);
                     break;
                 case '9':
                     return;

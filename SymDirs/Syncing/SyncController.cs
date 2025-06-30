@@ -7,6 +7,8 @@ namespace SymDirs.Syncing;
 
 public class SyncController
 {
+    // ToDo for entire SyncController: Add folder support
+    // It should sync folders just like it does files.
     public void ProcessChanges(SyncedConfig config, bool dryRun = true)
     {
         foreach (SyncedConfigDirectory syncedConfigDirectory in config.GetSourceDirectories())
@@ -14,6 +16,7 @@ public class SyncController
             List<SyncedConfigDirectory> syncedWith = config.GetLinkedDirectories(syncedConfigDirectory);
             List<SyncOperation> syncOperations =
                 _computeSyncOperationsForLinkedDirectories(syncedWith);
+            syncOperations.AddRange(_fixOrphanedTargetDirectories(config));
             
             if (dryRun)
             {
@@ -27,6 +30,74 @@ public class SyncController
             // Apply operations
             _executeOperations(syncOperations, syncedWith);
         }
+    }
+
+    /// <summary>
+    /// Checks whether any target directory has a directory which isn't linked anymore but still exists in it
+    /// </summary>
+    /// <param name="config"></param>
+    /// <param name="dryRun"></param>
+    private List<SyncOperation> _fixOrphanedTargetDirectories(SyncedConfig config)
+    {
+        List<SyncedConfigDirectory> targetDirectories = config.GetTargetDirectories();
+        List<SyncOperation> syncOperations = new();
+        foreach (SyncedConfigDirectory syncedConfigDirectory in config.GetSourceDirectories())
+        {
+            if (!syncedConfigDirectory.HasCorrectFolderMarkers()) continue;
+            string? sourcePath = syncedConfigDirectory.GetRootDirectoryForSyncingOperations();
+            if (sourcePath == null) continue;
+            List<SyncedConfigDirectory> syncedConfigDirectories = config.GetLinkedDirectories(syncedConfigDirectory);
+            foreach (SyncedConfigDirectory targetDirectory in targetDirectories)
+            {
+                if (targetDirectory.IsSourceDirectory) continue;
+                if (syncedConfigDirectories.Any(x => x.Id == targetDirectory.Id)) continue;
+                // make sure that it actually checks the correct subdirectory
+                targetDirectory.SetSyncedWithDirectory(syncedConfigDirectory);
+                Console.WriteLine($"Checking candidate {targetDirectory}");
+                // now check folder marker
+                if (!targetDirectory.HasCorrectFolderMarkers()) continue;
+                string? path = targetDirectory.GetRootDirectoryForSyncingOperations();
+                if (path == null) continue;
+                Uri rootPathUri = new Uri(path);
+                Dictionary<SyncedConfigDirectory, string> rootDirs = new Dictionary<SyncedConfigDirectory, string>();
+                foreach (SyncedConfigDirectory sDir in syncedConfigDirectories)
+                {
+                    string? rDir = sDir.GetRootDirectoryForSyncingOperations();
+                    if (rDir == null) continue;
+                    rootDirs.Add(sDir, rDir);
+                }
+                   
+                using (Database db = new())
+                {
+                    List<DbFile> files = db.Files.Where(x => x.IsSynced && x.FullPath.StartsWith(path)).ToList();
+                    foreach (DbFile foundFile in files)
+                    {
+                        syncOperations.Add(new SyncOperation
+                        {
+                            SourcePath = foundFile.FullPath,
+                            TargetPath = foundFile.FullPath,
+                            AffectedFiles = [foundFile],
+                            Type = SyncOperationType.Delete
+                        });
+                        foundFile.SetRelativePathToSyncedDirectory(rootPathUri, targetDirectory);
+                        db.Files.Remove(foundFile);
+                        foreach (var otherDir in rootDirs)
+                        {
+                            string targetPath = Path.Combine(otherDir.Value, foundFile.RelativePathToSyncedDirectory);
+                            syncOperations.Add(new SyncOperation
+                            {
+                                SourcePath = foundFile.FullPath,
+                                TargetPath = targetPath,
+                                AffectedFiles = [new DbFile{FullPath = targetPath}],
+                                Type = SyncOperationType.UpdateSyncedDirectories
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        return syncOperations;
     }
 
     private void _executeOperations(List<SyncOperation> syncOperations, List<SyncedConfigDirectory> syncedWith)
@@ -57,7 +128,6 @@ public class SyncController
                 
             }
 
-            Dictionary<string, bool> uniqueFiles = new();
             foreach (SyncOperation syncOperation in syncOperations)
             {
                 Console.WriteLine($"Executing {syncOperation}");
@@ -79,19 +149,39 @@ public class SyncController
 
                         }
                         break;
+                    case SyncOperationType.RemoveFromIndex:
+                        foreach (var syncOperationAffectedFile in syncOperation.AffectedFiles)
+                        {
+                            db.Files.Remove(syncOperationAffectedFile);
+                        }
+                        continue;
                     case SyncOperationType.Conflict:
                         Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine("Conflict is disabled for now at {syncOperation.SourcePath} to {syncOperation.TargetPath}");
+                        Console.WriteLine($"Conflict is disabled for now at {syncOperation.SourcePath} to {syncOperation.TargetPath}");
                         Console.ResetColor();
-                        break;
+                        break;  
                     case SyncOperationType.UpdateIndex:
+                        break;
+                    case SyncOperationType.UpdateSyncedDirectories:
+                        for (int i = 0; i < syncOperation.AffectedFiles.Count; i++)
+                        {
+                            // fetch it from the db and populate entries
+                            DbFile? inDbFile = db.Files.FirstOrDefault(x => x.FullPath == syncOperation.AffectedFiles[i].FullPath && x.IsSynced);
+                            if (inDbFile == null)
+                            {
+                                syncOperation.AffectedFiles.RemoveAt(i);
+                                i--;
+                                continue;
+                            }
+
+                            syncOperation.AffectedFiles[i].PopulateFrom(inDbFile);
+                        }
+
                         break;
                 }
 
-                List<DbFile> filesToUpdate = new();
                 foreach (DbFile syncOperationAffectedFile in syncOperation.AffectedFiles)
                 {
-                    if (uniqueFiles.ContainsKey(syncOperationAffectedFile.FullPath)) continue;
                     syncOperationAffectedFile.SyncedWith = syncedWithMapping;
                     syncOperationAffectedFile.LastSync = lastSync;
                     syncOperationAffectedFile.IsSynced = true;
@@ -105,11 +195,6 @@ public class SyncController
             }
 
             db.SaveChanges();
-            Console.WriteLine("\n\n__Updated files__");
-            foreach (var keyValuePair in uniqueFiles)
-            {
-                Console.WriteLine(keyValuePair.Key);
-            }
         }
         
     }
@@ -119,6 +204,7 @@ public class SyncController
         Dictionary<string, List<DbFile>> changedFilesByRelativePath = new Dictionary<string, List<DbFile>>();
         // We store this here to avoid multiple calls to GetRootDirectoryForSyncingOperations as it's more expensive than a lookup.
         Dictionary<SyncedConfigDirectory, string> pathByDirectory = new Dictionary<SyncedConfigDirectory, string>();
+        directories = directories.OrderByDescending(x => x.IsSourceDirectory).ToList();
         
         // Check directories for folder markers
         for (int i = 0; i < directories.Count; i++)
@@ -332,5 +418,44 @@ public class SyncController
         });
 
         return files;
+    }
+
+    public void RestoreFolderMarkerAssistant(SyncedConfig syncedConfig)
+    {
+        List<SyncedConfigDirectory> targetDirectories = syncedConfig.GetTargetDirectories();
+        foreach (var sourceDirectory in syncedConfig.GetSourceDirectories())
+        {
+            string? sourcePath = sourceDirectory.GetRootDirectoryForSyncingOperations();
+            if(sourcePath == null) continue;
+            if (!sourceDirectory.HasCorrectFolderMarkers())
+            {
+                Console.WriteLine("Do you want to create the folder marker of following directory (y/N)?");
+                Console.WriteLine(sourceDirectory.ToString());
+                bool createMarker = Console.ReadLine()?.ToLower().Trim() == "y";
+                if (!createMarker) continue;
+                FolderMarker.CreateDirectoryMarker(sourcePath, sourceDirectory.Id);
+            }
+            
+            foreach (SyncedConfigDirectory targetDirectory in syncedConfig.GetLinkedDirectories(sourceDirectory))
+            {
+                if (targetDirectory.IsSourceDirectory) continue;
+                if (targetDirectory.HasCorrectFolderMarkers()) continue;
+                string? targetPath = targetDirectory.GetRootDirectoryForSyncingOperations();
+                if (targetPath == null) continue;
+                Console.WriteLine("Do you want to create the folder marker of following directory (y/N)?");
+                Console.WriteLine(targetDirectory.ToString());
+                bool createMarker = Console.ReadLine()?.ToLower().Trim() == "y";
+                if (!createMarker) continue;
+                string? expectedId = targetDirectory.GetExpectedFolderMarkerForSyncingOperations();
+                if (expectedId == null)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Couldn't get expected folder marker id. This is not supposed to happen. Skipping creation");
+                    Console.ResetColor();
+                    continue;
+                }
+                FolderMarker.CreateDirectoryMarker(targetPath, expectedId);
+            }
+        }
     }
 }

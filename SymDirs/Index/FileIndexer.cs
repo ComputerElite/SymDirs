@@ -160,5 +160,42 @@ public class FileIndexer
             }
             IndexSyncedConfigDirectory(directory, rehashIfModifiedDataHasntChanged);
         }
+
+        using (Database db = new())
+        {
+            
+        
+            // Detect orphans
+            List<SyncedConfigDirectory> targetDirectories = syncedConfig.GetTargetDirectories();
+            foreach (SyncedConfigDirectory syncedConfigDirectory in syncedConfig.GetSourceDirectories())
+            {
+                if (!syncedConfigDirectory.HasCorrectFolderMarkers()) continue;
+                string? sourcePath = syncedConfigDirectory.GetRootDirectoryForSyncingOperations();
+                if (sourcePath == null) continue;
+                List<SyncedConfigDirectory> syncedConfigDirectories = syncedConfig.GetLinkedDirectories(syncedConfigDirectory);
+                foreach (SyncedConfigDirectory targetDirectory in targetDirectories)
+                {
+                    if (targetDirectory.IsSourceDirectory) continue;
+                    if (syncedConfigDirectories.Any(x => x.Id == targetDirectory.Id)) continue;
+                    // make sure that it actually checks the correct subdirectory
+                    targetDirectory.SetSyncedWithDirectory(syncedConfigDirectory);
+                    Console.WriteLine($"Checking candidate {targetDirectory}");
+                    // now check folder marker
+                    if (!targetDirectory.HasCorrectFolderMarkers()) continue;
+                    string? path = targetDirectory.GetRootDirectoryForSyncingOperations();
+                    if (path == null) continue;
+
+                    foreach (DbFile dbFile in db.Files.Where(x => x.FullPath.StartsWith(path)))
+                    {
+                        // mark the files as orphaned
+                        DbFile newFile = new DbFile(dbFile);
+                        newFile.State = DbFileState.Orphaned;
+                        newFile.LastSync = null;
+                        newFile.IsSynced = false;
+                        db.Files.Add(newFile);
+                    }
+                }
+            }
+        }
     }
 }

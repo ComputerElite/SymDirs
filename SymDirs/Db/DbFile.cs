@@ -24,9 +24,8 @@ public class DbFile
         State = DbFileState.Unknown;
     }
 
-    public DbFile(DbFile copy, string newPath)
+    private void _copy(DbFile copy)
     {
-        FullPath = newPath;
         Hash = copy.Hash;
         ByteSize = copy.ByteSize;
         InodeNumber = copy.InodeNumber;
@@ -35,6 +34,26 @@ public class DbFile
         State = copy.State;
         IsSynced = copy.IsSynced;
         RelativePathToSyncedDirectory = copy.RelativePathToSyncedDirectory;
+    }
+
+    public DbFile(DbFile copy)
+    {
+        _copy(copy);
+    }
+
+    public DbFile(DbFile copy, string newPath)
+    {
+        _copy(copy);
+        FullPath = newPath;
+    }
+    
+    /// <summary>
+    /// Populates hash, and other info from an existing database entry. Mainly for the UpdateSyncedDirectories SyncOperation!!!
+    /// </summary>
+    /// <param name="inDbFile"></param>
+    public void PopulateFrom(DbFile inDbFile)
+    {
+        _copy(inDbFile);
     }
     
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -87,6 +106,7 @@ public class DbFile
         }
         return this;
     }
+
 }
 
 public enum DbFileState
@@ -108,6 +128,10 @@ public enum DbFileState
     /// File is new, not tracked before.
     /// </summary>
     New,
+    /// <summary>
+    /// When a file gets removed from a syned directory 
+    /// </summary>
+    Orphaned,
     /// <summary>
     /// All changes which have been synced have this state.
     /// </summary>

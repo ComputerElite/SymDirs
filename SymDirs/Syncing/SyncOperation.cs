@@ -28,7 +28,8 @@ public class SyncOperation
                 Console.ForegroundColor = ConsoleColor.Red;
                 break;
             case SyncOperationType.UpdateIndex:
-                Console.ForegroundColor = ConsoleColor.Gray; break;
+                Console.ForegroundColor = ConsoleColor.Gray;
+                break;
         }
         Console.WriteLine(ToString());
         Console.ResetColor();
@@ -40,5 +41,7 @@ public enum SyncOperationType
     CreateLink,
     Delete,
     Conflict,
-    UpdateIndex
+    UpdateIndex,
+    UpdateSyncedDirectories,
+    RemoveFromIndex
 }

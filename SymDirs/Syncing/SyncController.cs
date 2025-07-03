@@ -102,7 +102,7 @@ public class SyncController
 
     private void _executeOperations(List<SyncOperation> syncOperations, List<SyncedConfigDirectory> syncedWith)
     {
-        
+        // ToDo: Differentiate between files and directories
         DateTime lastSync = DateTime.Now;
         using (Database db = new())
         {

@@ -63,6 +63,11 @@ public class DbFile
     public byte[] Hash { get; set; } = [];
     public long ByteSize { get; set; } = 0;
     public ulong? InodeNumber { get; set; } = null;
+    [NotMapped]
+    public bool IsDirectory
+    {
+        get => FullPath.EndsWith(Path.DirectorySeparatorChar);
+    }
     public DateTime LastModified { get; set; } = DateTime.MinValue;
     public DateTime? LastSync { get; set; } = null;
     public DbFileState State { get; set; } = DbFileState.Unknown;

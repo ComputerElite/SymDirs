@@ -89,6 +89,13 @@ public class FileIndexer
         List<DbFile> files = new List<DbFile>();
         List<string> checkedPaths = new List<string>();
         Console.WriteLine($"Indexing directory {path}...");
+        foreach (string directoryPath in Directory.GetDirectories(path, "*", SearchOption.AllDirectories))
+        {
+            string dirPath = directoryPath;
+            if (!dirPath.EndsWith(Path.DirectorySeparatorChar)) dirPath += Path.DirectorySeparatorChar; 
+            Console.WriteLine(dirPath);
+            // ToDo: Create DB File
+        }
         foreach (string filePath in Directory.GetFiles(path, "*.*", SearchOption.AllDirectories))
         {
             Console.WriteLine(filePath);

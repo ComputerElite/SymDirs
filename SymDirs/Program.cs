@@ -25,6 +25,10 @@ class Program
             { Description = "If provided mounts will be updated when the the config files change" };
         updateMountsCommand.Add(watchOption);
         updateMountsCommand.Add(configOption);
+
+        Command installServiceCommand = new Command("install-service") {Description = "Creates and enables a systemd service for updating the bind mounts based on the provided config. Updates the service if it already exists."};
+        rootCommand.Add(installServiceCommand);
+        installServiceCommand.Add(configOption);
         
         rootCommand.Description = "Sym Dirs";
 
@@ -43,6 +47,10 @@ class Program
             ConfigContext configs = new (parsedResult.GetValue(configOption));
             bool watch = parsedResult.GetValue(watchOption);
             MountManager.Update(configs, watch);
+        });
+        installServiceCommand.SetAction(parsedResult =>
+        {
+            ServiceInstaller.InstallService(parsedResult.GetValue(configOption));
         });
         return rootCommand.Parse(args).Invoke();
     }

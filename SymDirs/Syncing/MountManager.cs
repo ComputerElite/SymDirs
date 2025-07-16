@@ -12,7 +12,21 @@ public class MountManager
         using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
         _logger = factory.CreateLogger("MountManager");
     }
-    private int _invokeProcess(ProcessStartInfo info)
+
+    public int InvokeProcess(string filename, string arguments)
+    {
+        return InvokeProcess(new ProcessStartInfo
+        {
+
+            FileName = filename,
+            Arguments = arguments,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        });
+    }
+    public int InvokeProcess(ProcessStartInfo info)
     {
         Process? uMountProcess = Process.Start(info);
         if(uMountProcess == null) return -1;
@@ -54,7 +68,7 @@ public class MountManager
             string path = command.Path;
             if(command.UnmountCommand == null) continue;
             _logger.LogInformation(String.Join(" ", command.UnmountCommand.ArgumentList));
-            if(_invokeProcess(command.UnmountCommand) != 0)
+            if(InvokeProcess(command.UnmountCommand) != 0)
             {
                 return;
             }
@@ -70,28 +84,12 @@ public class MountManager
         }
         _logger.LogInformation("Reloading daemon to use new /etc/fstab");
         // ToDo: Apply only the mount operations actually needed instead of applying everything from the fstab
-        if (_invokeProcess(new ProcessStartInfo
-            {
-                FileName = "systemctl",
-                Arguments = "daemon-reload",
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            }) != 0)
+        if (InvokeProcess("systemctl", "daemon-reload") != 0)
         {
             return;
         }
         _logger.LogInformation("Mounting everything from fstab");
-        if(_invokeProcess(new ProcessStartInfo
-        {
-            FileName = "mount",
-            Arguments = "-a",
-            RedirectStandardError =true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        }) != 0)
+        if(InvokeProcess("mount", "-a") != 0)
         {
             return;
         }

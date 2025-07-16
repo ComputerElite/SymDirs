@@ -73,7 +73,7 @@ public class Config : BaseConfig
         string configDir = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") 
                            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config");
 
-        string appConfigDir = Path.Combine(configDir, "sym-dirs");
+        string appConfigDir = Path.Combine(configDir, "symdirs");
 
         // Ensure the directory exists
         Directory.CreateDirectory(appConfigDir);

@@ -23,18 +23,19 @@ public class FsTabGenerator
             {
                 string[] mountParts = mountedDir.Split(' ');
                 if (mountParts.Length < 2) continue;
-                if (!mountParts[1].StartsWith(dir)) continue;
+                string mDir = mountParts[1].Replace("\\040", " ");
+                if (!mDir.StartsWith(dir)) continue;
                 foreach (SyncedConfigDirectory possibleSourceDir in config.GetSourceDirectories())
                 {
                     targetDir.SetSyncedWithDirectory(possibleSourceDir);
                     string? possiblePath = targetDir.GetRootDirectoryForSyncingOperations();
                     if (possiblePath == null) continue;
                     possiblePath = possiblePath.TrimEnd(Path.DirectorySeparatorChar);
-                    if (possiblePath == mountParts[1]) break;
+                    if (possiblePath == mDir) break;
                 }
                 mountedSymDirs.Add(new ()
                 {
-                    Path = mountParts[1],
+                    Path = mDir,
                     SyncedDirectory = targetDir
                 });
             }    
@@ -77,12 +78,10 @@ public class FsTabGenerator
                 if (target.IsSourceDirectory) continue;
                 string? targetPath = target.GetRootDirectoryForSyncingOperations();
                 if (targetPath == null) continue;
-                if(sourcePath.Contains(' ')) sourcePath = "\"" + sourcePath + "\"";
-                if(targetPath.Contains(' ')) targetPath = "\"" + targetPath + "\"";
                 targetPath = targetPath.TrimEnd(Path.DirectorySeparatorChar);
                 sourcePath = sourcePath.TrimEnd(Path.DirectorySeparatorChar);
                 // bind mount with option to hide it in the file manager
-                string start = $"{sourcePath} {targetPath}";
+                string start = $"{sourcePath.Replace(" ", "\\040")} {targetPath.Replace(" ", "\\040")}";
                 for (int i = 0; i < existingSymDirsMounts.Count; i++)
                 {
                     if (existingSymDirsMounts[i].Path != targetPath) continue;

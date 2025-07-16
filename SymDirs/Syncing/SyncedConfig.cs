@@ -194,11 +194,11 @@ public class SyncedConfig : BaseConfig
         BooleanMessage<SyncedConfigDirectory> result = _internalAddDirectory(path);
         if (!result.Success || result.Data == null)
         {
-            return new BooleanMessage("Failed to add source directory: " + result.Message, false);
+            return new BooleanMessage("Failed to add target directory: " + result.Message, false);
         }
         result.Data.IsSourceDirectory = false;
         TargetDirectories.Add(result.Data);
-        return new BooleanMessage("Source directory '" + result.Data.FolderName + "' added with ID '" + result.Data.Id + "'", true);
+        return new BooleanMessage("Target directory '" + result.Data.FolderName + "' added with ID '" + result.Data.Id + "'", true);
     }
 
     private string? _fuzzyMatch(List<SyncedConfigDirectory> directories, string pattern)

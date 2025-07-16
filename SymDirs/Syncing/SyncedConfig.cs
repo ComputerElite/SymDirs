@@ -201,8 +201,27 @@ public class SyncedConfig : BaseConfig
         return new BooleanMessage("Source directory '" + result.Data.FolderName + "' added with ID '" + result.Data.Id + "'", true);
     }
 
-    public BooleanMessage CreateLink(string sourceDirectoryId, string targetDirectoryId)
+    private string? _fuzzyMatch(List<SyncedConfigDirectory> directories, string pattern)
     {
+        foreach (SyncedConfigDirectory sourceDir in directories)
+        {
+            if (sourceDir.FolderName.ToLower().StartsWith(pattern.ToLower()) ||
+                sourceDir.DisplayName.ToLower().StartsWith(pattern.ToLower()))
+            {
+                return sourceDir.Id;
+            }       
+        }
+
+        return null;
+    }
+
+    public BooleanMessage CreateLink(string sourceDirectoryId, string targetDirectoryId, bool fuzzyMatching = false, bool createFolder = true)
+    {
+        if (fuzzyMatching)
+        {
+            sourceDirectoryId = _fuzzyMatch(SourceDirectories, sourceDirectoryId) ?? sourceDirectoryId;
+            targetDirectoryId = _fuzzyMatch(TargetDirectories, targetDirectoryId) ?? targetDirectoryId;
+        }
         SyncedConfigDirectory? sourceDir = GetSourceDirectoryById(sourceDirectoryId);
         if (sourceDir == null)
             return new BooleanMessage($"A source directory with the Id '{sourceDirectoryId}' does not exist", false);
@@ -217,26 +236,29 @@ public class SyncedConfig : BaseConfig
             return new BooleanMessage("Target directory could not resolve a root directory, that's unusual ;-;", false);
         }
 
-        if (!Directory.Exists(targetRootPath))
+        if (createFolder && !Directory.Exists(targetRootPath))
         {
             Directory.CreateDirectory(targetRootPath);
         }
 
-        string? detectedTargetDirId = FolderMarker.GetIdOfDirectory(targetRootPath);
-        if (detectedTargetDirId != null && detectedTargetDirId != sourceDirectoryId)
+        if (createFolder)
         {
-            return new BooleanMessage(
-                $"The target directory '{targetRootPath}' already has a folder marker with the ID '{detectedTargetDirId}', which does not match the source directory ID '{sourceDirectoryId}'. Therefore the link will not be created.",
-                false);
-        }
+            string? detectedTargetDirId = FolderMarker.GetIdOfDirectory(targetRootPath);
+            if (detectedTargetDirId != null && detectedTargetDirId != sourceDirectoryId)
+            {
+                return new BooleanMessage(
+                    $"The target directory '{targetRootPath}' already has a folder marker with the ID '{detectedTargetDirId}', which does not match the source directory ID '{sourceDirectoryId}'. Therefore the link will not be created.",
+                    false);
+            }
 
-        BooleanMessage folderMarkerCreatedMessage =
-            FolderMarker.CreateDirectoryMarker(targetRootPath, sourceDirectoryId);
-        if (!folderMarkerCreatedMessage.Success)
-        {
-            return new BooleanMessage(
-                $"Failed to create folder marker for target directory '{targetRootPath}': {folderMarkerCreatedMessage.Message}",
-                false);
+            BooleanMessage folderMarkerCreatedMessage =
+                FolderMarker.CreateDirectoryMarker(targetRootPath, sourceDirectoryId);
+            if (!folderMarkerCreatedMessage.Success)
+            {
+                return new BooleanMessage(
+                    $"Failed to create folder marker for target directory '{targetRootPath}': {folderMarkerCreatedMessage.Message}",
+                    false);
+            }
         }
 
         SyncedConfigSyncedDirectory syncedDirectory = new()
@@ -248,13 +270,23 @@ public class SyncedConfig : BaseConfig
         return new BooleanMessage($"Link created between source directory '{sourceDir.Id}' ({sourceDir.GetRootDirectoryForSyncingOperations()}) and target directory '{targetDir.FolderName}' ({targetRootPath})", true);
     }
 
-    public BooleanMessage RemoveLink(string sourceDirectoryId, string targetDirectoryId)
+    public BooleanMessage RemoveLink(string sourceDirectoryId, string targetDirectoryId, bool fuzzyMatching = false)
     {
+        if (fuzzyMatching)
+        {
+            sourceDirectoryId = _fuzzyMatch(SourceDirectories, sourceDirectoryId) ?? sourceDirectoryId;
+            targetDirectoryId = _fuzzyMatch(TargetDirectories, targetDirectoryId) ?? targetDirectoryId;
+        }
         // This will just unconditionally remove a link, the SyncController will handle everything else in regards to unlinking
         SyncedConfigSyncedDirectory? syncedDirectory = SyncedDirectories.FirstOrDefault(x => x.SourceDirectoryId == sourceDirectoryId && x.TargetDirectoryId == targetDirectoryId);
         if (syncedDirectory == null)
             return new BooleanMessage($"There exists no link between '{sourceDirectoryId}' and '{targetDirectoryId}'", false);
         SyncedDirectories.Remove(syncedDirectory);
         return new BooleanMessage($"Link between '{sourceDirectoryId}' and '{targetDirectoryId}' successfully removed", true);
+    }
+
+    public void UpdateLocalConfig(LocalConfig localConfig)
+    {
+        _localConfig = localConfig;
     }
 }

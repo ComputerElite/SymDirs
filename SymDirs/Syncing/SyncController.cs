@@ -146,7 +146,6 @@ public class SyncController
                         else
                         {
                             File.Delete(syncOperation.TargetPath);
-
                         }
                         break;
                     case SyncOperationType.RemoveFromIndex:

@@ -1,4 +1,5 @@
 using System.Data.SqlTypes;
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using SymDirs.Db;
 using SymDirs.Index;
@@ -25,27 +26,30 @@ public class IndexingWindow
         {"4", "Set shared config path"},
         {"5", "Add directory"},
         {"6", "Update link"},
-        {"7", "Clear changed files table"},
+        {"7", "Generate /etc/fstab"},
         {"8", "Fix folder markers"},
         {"9", "Main Menu"},
     };
 
     public void PrintConfig()
     {
+        Dictionary<string, string> idToName = new();
         Console.WriteLine("___Source Directories___");
         foreach (SyncedConfigDirectory dir in syncedConfig.GetSourceDirectories())
         {
+            idToName.Add(dir.Id, dir.FolderName);
             Console.WriteLine(dir.ToString());
         }
         Console.WriteLine("\n___Target Directories___");
         foreach (SyncedConfigDirectory dir in syncedConfig.GetTargetDirectories())
         {
+            idToName.Add(dir.Id, dir.FolderName);
             Console.WriteLine(dir.ToString());
         }
         Console.WriteLine("\n___Synced Directories___");
         foreach (SyncedConfigSyncedDirectory dir in syncedConfig.SyncedDirectories)
         {
-            Console.WriteLine(dir.ToString());
+            Console.WriteLine(dir.ToString(idToName));
         }
         Console.WriteLine("\n___Database___");
         using (Database db = new())
@@ -213,8 +217,8 @@ public class IndexingWindow
                     }
 
                     BooleanMessage linkMsg = linkAction == "1"
-                        ? syncedConfig.CreateLink(sourceId, targetId)
-                        : syncedConfig.RemoveLink(sourceId, targetId);
+                        ? syncedConfig.CreateLink(sourceId, targetId, true)
+                        : syncedConfig.RemoveLink(sourceId, targetId, true);
                     if(!linkMsg.Success) 
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
@@ -228,23 +232,18 @@ public class IndexingWindow
                     syncedConfig.Save();
                     break;
                 case '7':
-                    using (Database db = new Database())
+                    if (syncedConfig == null)
                     {
-                        int deletedCount = db.Files.Where(x => !x.IsSynced).ExecuteDelete();
-                        if (deletedCount > 0)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine($"Deleted {deletedCount} files from the changed files table.");
-                        }
-                        else
-                        {
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("No files found in the changed files table.");
-                        }
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("No shared config loaded. Please load a shared config first.");
                         Console.ResetColor();
-                        db.SaveChanges();
+                        continue;
                     }
 
+                    new MountManager().UpdateMounts(FsTabGenerator.Generate(syncedConfig));
+
+                    //FileIndexer i = new FileIndexer();
+                    //i.StartFilesystemWatcher(syncedConfig);
                     break;
                 case '8':
                     if (syncedConfig == null)

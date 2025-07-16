@@ -9,4 +9,9 @@ public class SyncedConfigSyncedDirectory
     {
         return $"{SourceDirectoryId} --> {TargetDirectoryId}";
     }
+
+    public string ToString(Dictionary<string, string> idToName)
+    {
+        return  $"{SourceDirectoryId} {idToName[SourceDirectoryId]} --> {TargetDirectoryId} {idToName[TargetDirectoryId]}";
+    }
 }

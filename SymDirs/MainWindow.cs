@@ -29,7 +29,7 @@ public class MainWindow
 
     public void Show(string arg = "")
     {
-        if(config == null) config = Config.Load();
+        if(config == null) config = Config.Load(null);
         if (arg == "")
         {
             Console.ForegroundColor = ConsoleColor.White;
@@ -51,9 +51,9 @@ public class MainWindow
         Console.WriteLine();
         state = "";
         
-        switch (action.Length > 0 ? action[0] : ' ')
+        switch (action.Length > 0 ? action : "  ")
         {
-            case '1':
+            case "1":
                 Console.Write("Add subdirectories? (Y/n): ");
                 bool subdirs = actions.Count > 1 ? actions[0] != "n" : Console.ReadKey().KeyChar != 'n';
                 if(actions.Count > 1 && !actions[0].StartsWith("/")) actions.RemoveAt(0);
@@ -79,14 +79,14 @@ public class MainWindow
                 SaveAndApply();
                 state = $"Added {added} source {(added == 1 ? "directory" : "directories")}";
                 break;
-            case '2':
+            case "2":
                 Console.Write("Path: ");
                 string path2 = actions.Count >= 1 ? String.Join(',', actions) : Console.ReadLine();
                 if (path2.Trim() == "") break;
                 state = $"Added {config.AddTarget(path2)} target directory";
                 SaveAndApply();
                 break;
-            case '3':
+            case "3":
                 string expression;
                 if (actions.Count < 2)
                 {
@@ -146,15 +146,15 @@ public class MainWindow
                 }
                 
                 break;
-            case '4':
+            case "4":
                 SaveAndApply();
                 state = "Applied state to disk";
                 break;
-            case '5':
-                config = Config.Load();
+            case "5":
+                config = Config.Load(null);
                 state = "Loaded config from disk";
                 break;
-            case '6':
+            case "6":
                 try
                 {
                     string expression2;
@@ -176,7 +176,7 @@ public class MainWindow
                     state = e.ToString();
                 }
                 break;
-            case '7':
+            case "7":
                 try
                 {
                     string expression2;
@@ -198,14 +198,14 @@ public class MainWindow
                     state = e.ToString();
                 }
                 break;
-            case '8':
+            case "8":
                 state = $"Added {StateCreator.UpdateSubdirsInConfig(config)} new source directories from {config.SourceDirectorySources.Count} directories";
                 SaveAndApply();
                 break;
-            case '9':
+            case "9":
                 Settings();
                 break;
-            case '0':
+            case "0":
                 new IndexingWindow(config).Show();
                 break;
         }

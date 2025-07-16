@@ -2,6 +2,7 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 
 namespace SymDirs;
 
@@ -10,20 +11,31 @@ public class BaseConfig
     private string _path = "config.json";
     protected static T Load<T>(string path) where T : BaseConfig, new()
     {
+        using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
+        ILogger logger = factory.CreateLogger($"Config<{typeof(T).Name}>");
         if (!File.Exists(path))
         {
             // Create a new config file if it does not exist
-            File.WriteAllText(path, "{}");
+            logger.LogInformation("Creating new config file as no file exists");
+            try
+            {
+                File.WriteAllText(path, "{}");
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"Could not create new config file. Saving will be impacted!\n{e}");
+            }
         }
         T config = new T();
         try
         {
+            logger.LogInformation($"Loading config from {path}");
             config = JsonSerializer.Deserialize<T>(File.ReadAllText(path)) ?? new T();
         }
         catch (Exception e)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"Error loading config from {path}: {e}");
+            logger.LogError($"Error loading config from {path}: {e}");
         }
 
         config._path = path;
@@ -32,6 +44,9 @@ public class BaseConfig
 
     protected void Save<T>(T config) where T : BaseConfig
     {
+        using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
+        ILogger logger = factory.CreateLogger($"Config<{typeof(T).Name}>");
+        logger.LogInformation($"Saving config file to {_path}");
         try
         {
             File.WriteAllText(_path, JsonSerializer.Serialize(config));
@@ -39,12 +54,12 @@ public class BaseConfig
         catch (Exception e)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"Error saving config to {_path}: {e}");
+            logger.LogError($"Error saving config to {_path}: {e}");
         }
     }
 }
 
-public class Config
+public class Config : BaseConfig
 {
     public List<ConfigDirectory> SourceDirectories { get; set; } = new ();
     public List<string> SourceDirectorySources { get; set; } = new ();
@@ -65,18 +80,14 @@ public class Config
         return appConfigDir;
     }
     
-    public static Config Load(string path = "")
+    public static Config Load(string? path)
     {
-        if (path == "")
+        if (String.IsNullOrEmpty(path))
         {
-            path = Path.Combine(GetConfigDirectory(), "config.json");
+            path = Path.Join(GetConfigDirectory(), "config.json");
         }
-        if (!File.Exists(path))
-        {
-            return new Config();
-        }
-
-        Config c = JsonSerializer.Deserialize<Config>(File.ReadAllText(path)) ?? new Config();
+        Config c = Load<Config>(path);
+        // apply stuff for legacy symdirs functionality
         c.RemoveDuplicates();
         c.UpdateRelations();
         StateCreator.CheckState(c);
@@ -124,13 +135,12 @@ public class Config
     {
         RemoveDuplicates();
         UpdateRelations();
-        string json = JsonSerializer.Serialize(this);
-        File.WriteAllText(Path.Combine(GetConfigDirectory(), "config.json"), json);
+        Save(this);
         foreach(ConfigDirectory dir in TargetDirectories)
         {
             if (dir.Path == null) continue;
             string path = Path.GetFullPath(Path.Combine(dir.Path, "symdirs." + Dns.GetHostName() + ".config.json"));
-            File.WriteAllText(path, json);
+            File.WriteAllText(path, JsonSerializer.Serialize(this));
         }
     }
     public int AddTarget(string path)

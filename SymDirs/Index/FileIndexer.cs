@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using SymDirs.Db;
@@ -7,6 +8,7 @@ namespace SymDirs.Index;
 
 public class FileIndexer
 {
+    public static List<FileSystemWatcher> FileWatchers { get; } = new List<FileSystemWatcher>();
     private byte[] HashFile(string path)
     {
         using (SHA256 hash = SHA256.Create())
@@ -33,6 +35,7 @@ public class FileIndexer
     /// <returns></returns>
     private DbFile? IndexFile(string path, bool rehashIfModifiedDataHasntChanged = false, bool returnNullIfUnchanged = true)
     {
+        Console.WriteLine($"Indexing {path}");
         using (var db = new Database())
         {
             // 1. Retrieve old file state from the database
@@ -145,6 +148,59 @@ public class FileIndexer
         IndexDirectory(rootDirectory, rehashIfModifiedDataHasntChanged);
     }
 
+    public void UpdateFile(string path)
+    {
+        DbFile? indexedFile = IndexFile(path);
+        if(indexedFile == null) return;
+        using (Database db = new Database())
+        {
+            
+            int deletedDuplicates = db.Files.Where(x => !x.IsSynced && x.FullPath == path).ExecuteDelete();
+            if (deletedDuplicates > 0)
+            {
+                Console.WriteLine($"Deleted {deletedDuplicates} duplicate entries from the database.");
+            }
+            db.Files.Add(indexedFile);
+            db.SaveChanges();
+        }
+    }
+
+    public void StartFilesystemWatcherOnDirectory(string directory)
+    {
+        FileSystemWatcher watcher = new FileSystemWatcher(directory);
+        watcher.Filter = "*";
+        watcher.IncludeSubdirectories = true;
+        watcher.EnableRaisingEvents = true;
+        watcher.NotifyFilter = NotifyFilters.FileName
+                               | NotifyFilters.LastWrite;
+        watcher.Changed += (obj, args) => UpdateFile(args.FullPath);
+        //watcher.Created += (obj, args) => UpdateFile(args.FullPath);
+        watcher.Renamed += (obj, args) => UpdateFile(args.FullPath);
+        watcher.Deleted += (obj, args) => UpdateFile(args.FullPath);
+        Console.WriteLine($"Started watched on {directory}");
+        FileWatchers.Add(watcher);
+    }
+
+    /// <summary>
+    /// Starts filesystem watchers on all directories in the config and updates the index when a file is changed :3
+    /// </summary>
+    /// <param name="config"></param>
+    public void StartFilesystemWatcher(SyncedConfig config)
+    {
+        foreach (SyncedConfigDirectory dir in config.GetSourceDirectories())
+        {
+            string? path = dir.GetRootDirectoryForIndexingOperations();
+            if (path == null) continue;
+            StartFilesystemWatcherOnDirectory(path);
+        }
+        foreach (SyncedConfigDirectory dir in config.GetTargetDirectories())
+        {
+            string? path = dir.GetRootDirectoryForIndexingOperations();
+            if (path == null) continue;
+            StartFilesystemWatcherOnDirectory(path);
+        }
+    }
+
     /// <summary>
     /// Does a full scan of all directories container in the synced config therefore returning all files that have been found with their respective indexed state.
     /// </summary>
@@ -170,8 +226,6 @@ public class FileIndexer
 
         using (Database db = new())
         {
-            
-        
             // Detect orphans
             List<SyncedConfigDirectory> targetDirectories = syncedConfig.GetTargetDirectories();
             foreach (SyncedConfigDirectory syncedConfigDirectory in syncedConfig.GetSourceDirectories())

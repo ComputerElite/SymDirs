@@ -241,9 +241,6 @@ public class IndexingWindow
                     }
 
                     new MountManager().UpdateMounts(FsTabGenerator.Generate(syncedConfig));
-
-                    //FileIndexer i = new FileIndexer();
-                    //i.StartFilesystemWatcher(syncedConfig);
                     break;
                 case '8':
                     if (syncedConfig == null)
